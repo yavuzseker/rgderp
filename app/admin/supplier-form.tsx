@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet, Alert } from "react-native";
-import { TextInput, Button, Text } from "react-native-paper";
+import { ScrollView, StyleSheet, View } from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  Surface,
+  Divider,
+  HelperText,
+} from "react-native-paper";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   addSupplier,
   updateSupplier,
   subscribeSuppliers,
 } from "../../src/services/suppliers";
-import type { Supplier } from "../../src/types";
 
 function generateToken() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -22,6 +28,7 @@ export default function SupplierForm() {
   const [contact, setContact] = useState("");
   const [accessToken, setAccessToken] = useState(generateToken());
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -39,9 +46,10 @@ export default function SupplierForm() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Hata", "Tedarikçi adı gerekli.");
+      setError("Tedarikçi adı gerekli.");
       return;
     }
+    setError("");
     setLoading(true);
     try {
       if (isEdit) {
@@ -51,7 +59,7 @@ export default function SupplierForm() {
       }
       router.back();
     } catch (e: any) {
-      Alert.alert("Hata", e.message);
+      setError(e.message || "Bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -59,56 +67,102 @@ export default function SupplierForm() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text variant="titleMedium" style={styles.heading}>
-        {isEdit ? "Tedarikçi Düzenle" : "Yeni Tedarikçi"}
-      </Text>
-      <TextInput
-        label="Firma Adı"
-        value={name}
-        onChangeText={setName}
-        mode="outlined"
-        style={styles.input}
-      />
-      <TextInput
-        label="İletişim (telefon/e-posta)"
-        value={contact}
-        onChangeText={setContact}
-        mode="outlined"
-        style={styles.input}
-      />
-      <TextInput
-        label="Erişim Tokeni"
-        value={accessToken}
-        onChangeText={setAccessToken}
-        mode="outlined"
-        style={styles.input}
-        right={
-          <TextInput.Icon
-            icon="refresh"
-            onPress={() => setAccessToken(generateToken())}
+      <Surface style={styles.card} elevation={1}>
+        <Text variant="titleLarge" style={styles.heading}>
+          {isEdit ? "Tedarikçi Düzenle" : "Yeni Tedarikçi"}
+        </Text>
+        <Text variant="bodySmall" style={styles.subtitle}>
+          Tedarikçi bilgilerini girin. Erişim tokeni otomatik oluşturulur.
+        </Text>
+
+        <Divider style={styles.divider} />
+
+        <TextInput
+          label="Firma Adı"
+          value={name}
+          onChangeText={(v) => { setName(v); setError(""); }}
+          mode="outlined"
+          style={styles.input}
+          left={<TextInput.Icon icon="domain" />}
+        />
+        <TextInput
+          label="İletişim (telefon / e-posta)"
+          value={contact}
+          onChangeText={setContact}
+          mode="outlined"
+          style={styles.input}
+          left={<TextInput.Icon icon="phone-outline" />}
+        />
+
+        <Divider style={styles.divider} />
+
+        <Text variant="labelLarge" style={styles.tokenLabel}>
+          Erişim Tokeni
+        </Text>
+        <View style={styles.tokenRow}>
+          <TextInput
+            value={accessToken}
+            onChangeText={setAccessToken}
+            mode="outlined"
+            dense
+            style={styles.tokenInput}
+            left={<TextInput.Icon icon="key-outline" />}
           />
-        }
-      />
-      <Text variant="bodySmall" style={styles.hint}>
-        Bu token ile tedarikçi şifresiz giriş yapar.
-      </Text>
+          <Button
+            mode="contained-tonal"
+            icon="refresh"
+            compact
+            onPress={() => setAccessToken(generateToken())}
+            style={styles.tokenRefresh}
+          >
+            Yenile
+          </Button>
+        </View>
+        <Text variant="bodySmall" style={styles.hint}>
+          Bu token ile tedarikçi şifresiz giriş yapar. Paylaşılacak link
+          oluşturulurken kullanılır.
+        </Text>
+      </Surface>
+
+      {error !== "" && (
+        <HelperText type="error" visible style={styles.errorText}>
+          {error}
+        </HelperText>
+      )}
+
       <Button
         mode="contained"
         onPress={handleSave}
         loading={loading}
         disabled={loading}
         style={styles.saveBtn}
+        contentStyle={styles.saveBtnContent}
+        icon={isEdit ? "content-save-outline" : "check-circle-outline"}
       >
-        {isEdit ? "Güncelle" : "Kaydet"}
+        {isEdit ? "Güncelle" : "Tedarikçi Kaydet"}
       </Button>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#f5f5f5" },
-  heading: { marginBottom: 16, fontWeight: "bold" },
-  input: { marginBottom: 12 },
-  hint: { color: "#888", marginBottom: 20 },
-  saveBtn: { marginBottom: 40 },
+  container: { flex: 1, padding: 16, backgroundColor: "#f0f2f5" },
+  card: { padding: 20, borderRadius: 12, backgroundColor: "#fff" },
+  heading: { fontWeight: "bold", color: "#1a1a1a" },
+  subtitle: { color: "#888", marginTop: 4 },
+  divider: { marginVertical: 16 },
+  input: { marginBottom: 14, backgroundColor: "#fff" },
+  tokenLabel: { marginBottom: 8, color: "#555" },
+  tokenRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  tokenInput: { flex: 1, backgroundColor: "#fff" },
+  tokenRefresh: { marginTop: 4 },
+  hint: { color: "#888", marginTop: 8 },
+  errorText: { fontSize: 14, textAlign: "center", marginTop: 8 },
+  saveBtn: {
+    marginTop: 20,
+    marginBottom: 40,
+    borderRadius: 8,
+    backgroundColor: "#1565C0",
+  },
+  saveBtnContent: { paddingVertical: 6 },
 });

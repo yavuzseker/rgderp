@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
-import { FAB, List, Text, Chip } from "react-native-paper";
+import { FAB, List, Text, Chip, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { subscribeOrders } from "../../src/services/orders";
 import type { Order } from "../../src/types";
@@ -28,7 +28,14 @@ export default function Orders() {
   return (
     <View style={styles.container}>
       {orders.length === 0 ? (
-        <Text style={styles.empty}>Henüz sipariş yok.</Text>
+        <View style={styles.emptyContainer}>
+          <Text variant="titleMedium" style={styles.emptyTitle}>
+            Henüz sipariş yok
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyDesc}>
+            Yeni sipariş açmak için aşağıdaki butona tıklayın.
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={orders}
@@ -63,6 +70,7 @@ export default function Orders() {
       )}
       <FAB
         icon="plus"
+        label="Yeni Sipariş"
         style={styles.fab}
         onPress={() => router.push("/admin/order-form")}
       />
@@ -71,13 +79,20 @@ export default function Orders() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  empty: { textAlign: "center", marginTop: 40, color: "#999" },
+  container: { flex: 1, backgroundColor: "#f0f2f5" },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  emptyTitle: { color: "#555", marginBottom: 8 },
+  emptyDesc: { color: "#999", textAlign: "center" },
   item: {
     backgroundColor: "#fff",
     marginHorizontal: 12,
     marginTop: 8,
-    borderRadius: 8,
+    borderRadius: 10,
   },
-  fab: { position: "absolute", right: 16, bottom: 16 },
+  fab: { position: "absolute", right: 20, bottom: 20, backgroundColor: "#1565C0" },
 });

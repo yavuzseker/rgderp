@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import {
   TextInput,
   Button,
@@ -12,6 +7,8 @@ import {
   IconButton,
   Surface,
   Menu,
+  HelperText,
+  Divider,
 } from "react-native-paper";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { addProduct, getProduct, updateProduct } from "../../src/services/products";
@@ -29,6 +26,7 @@ export default function ProductForm() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => subscribeSuppliers(setSuppliers), []);
 
@@ -77,16 +75,25 @@ export default function ProductForm() {
     setStages(updated);
   };
 
-  const handleSave = async () => {
-    if (!name.trim() || !code.trim()) {
-      Alert.alert("Hata", "Ürün adı ve kodu gerekli.");
-      return;
+  const validate = (): string | null => {
+    if (!name.trim()) return "Ürün adı gerekli.";
+    if (!code.trim()) return "Ürün kodu gerekli.";
+    if (stages.length === 0) return "En az bir üretim aşaması ekleyin.";
+    for (let i = 0; i < stages.length; i++) {
+      if (!stages[i].name.trim()) return `Aşama ${i + 1}: Ad boş bırakılamaz.`;
+      if (!stages[i].defaultSupplierId)
+        return `Aşama ${i + 1}: Tedarikçi seçilmedi.`;
     }
-    if (stages.length === 0) {
-      Alert.alert("Hata", "En az bir aşama ekleyin.");
-      return;
-    }
+    return null;
+  };
 
+  const handleSave = async () => {
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError("");
     setLoading(true);
     try {
       const data: Omit<Product, "id"> = { name, code, stages };
@@ -97,108 +104,154 @@ export default function ProductForm() {
       }
       router.back();
     } catch (e: any) {
-      Alert.alert("Hata", e.message);
+      setError(e.message || "Bir hata oluştu.");
     } finally {
       setLoading(false);
     }
   };
 
   const getSupplierName = (supplierId: string) =>
-    suppliers.find((s) => s.id === supplierId)?.name ?? "Seçilmedi";
+    suppliers.find((s) => s.id === supplierId)?.name ?? "";
 
   return (
     <ScrollView style={styles.container}>
-      <Text variant="titleMedium" style={styles.heading}>
-        {isEdit ? "Ürünü Düzenle" : "Yeni Ürün"}
-      </Text>
+      <Surface style={styles.card} elevation={1}>
+        <Text variant="titleLarge" style={styles.heading}>
+          {isEdit ? "Ürünü Düzenle" : "Yeni Ürün Tanımla"}
+        </Text>
+        <Text variant="bodySmall" style={styles.subtitle}>
+          Ürün bilgilerini ve üretim rotasını girin.
+        </Text>
 
-      <TextInput
-        label="Ürün Adı"
-        value={name}
-        onChangeText={setName}
-        mode="outlined"
-        style={styles.input}
-      />
-      <TextInput
-        label="Ürün Kodu"
-        value={code}
-        onChangeText={setCode}
-        mode="outlined"
-        style={styles.input}
-      />
+        <Divider style={styles.divider} />
 
-      <Text variant="titleSmall" style={styles.stagesHeading}>
-        Üretim Aşamaları (Rota)
-      </Text>
+        <TextInput
+          label="Ürün Adı"
+          value={name}
+          onChangeText={(v) => { setName(v); setError(""); }}
+          mode="outlined"
+          style={styles.input}
+          left={<TextInput.Icon icon="tag-outline" />}
+        />
+        <TextInput
+          label="Ürün Kodu"
+          value={code}
+          onChangeText={(v) => { setCode(v); setError(""); }}
+          mode="outlined"
+          style={styles.input}
+          left={<TextInput.Icon icon="barcode" />}
+        />
+      </Surface>
 
-      {stages.map((stage, i) => (
-        <Surface key={stage.key} style={styles.stageCard} elevation={1}>
-          <View style={styles.stageHeader}>
-            <Text variant="labelLarge">Aşama {i + 1}</Text>
-            <View style={styles.stageActions}>
-              <IconButton
-                icon="arrow-up"
-                size={18}
-                onPress={() => moveStage(i, -1)}
-                disabled={i === 0}
-              />
-              <IconButton
-                icon="arrow-down"
-                size={18}
-                onPress={() => moveStage(i, 1)}
-                disabled={i === stages.length - 1}
-              />
-              <IconButton
-                icon="close"
-                size={18}
-                onPress={() => removeStage(i)}
-              />
-            </View>
+      <Surface style={styles.card} elevation={1}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Üretim Aşamaları (Rota)
+        </Text>
+        <Text variant="bodySmall" style={styles.subtitle}>
+          Sırayla üretim aşamalarını ekleyin. Her aşamaya sorumlu tedarikçi atayın.
+        </Text>
+
+        {stages.length === 0 && (
+          <View style={styles.emptyStages}>
+            <Text variant="bodyMedium" style={styles.emptyText}>
+              Henüz aşama eklenmedi
+            </Text>
           </View>
-          <TextInput
-            label="Aşama Adı"
-            value={stage.name}
-            onChangeText={(v) => updateStage(i, "name", v)}
-            mode="outlined"
-            dense
-            style={styles.stageInput}
-          />
-          <Menu
-            visible={menuVisible === i}
-            onDismiss={() => setMenuVisible(null)}
-            anchor={
-              <Button
-                mode="outlined"
-                compact
-                onPress={() => setMenuVisible(i)}
-                style={styles.stageInput}
-              >
-                Tedarikçi: {getSupplierName(stage.defaultSupplierId)}
-              </Button>
-            }
-          >
-            {suppliers.map((s) => (
-              <Menu.Item
-                key={s.id}
-                title={s.name}
-                onPress={() => {
-                  updateStage(i, "defaultSupplierId", s.id!);
-                  setMenuVisible(null);
-                }}
-              />
-            ))}
-          </Menu>
-        </Surface>
-      ))}
+        )}
 
-      <Button
-        mode="outlined"
-        icon="plus"
-        onPress={addStage}
-        style={styles.addBtn}
-      >
-        Aşama Ekle
-      </Button>
+        {stages.map((stage, i) => (
+          <Surface key={stage.key} style={styles.stageCard} elevation={0}>
+            <View style={styles.stageHeader}>
+              <View style={styles.stageBadge}>
+                <Text style={styles.stageBadgeText}>{i + 1}</Text>
+              </View>
+              <View style={styles.stageActions}>
+                <IconButton
+                  icon="chevron-up"
+                  size={18}
+                  onPress={() => moveStage(i, -1)}
+                  disabled={i === 0}
+                />
+                <IconButton
+                  icon="chevron-down"
+                  size={18}
+                  onPress={() => moveStage(i, 1)}
+                  disabled={i === stages.length - 1}
+                />
+                <IconButton
+                  icon="close-circle-outline"
+                  size={18}
+                  iconColor="#E53935"
+                  onPress={() => removeStage(i)}
+                />
+              </View>
+            </View>
+            <TextInput
+              label="Aşama Adı"
+              placeholder="Örn: Talaşlı İmalat, Kaplama..."
+              value={stage.name}
+              onChangeText={(v) => { updateStage(i, "name", v); setError(""); }}
+              mode="outlined"
+              dense
+              style={styles.stageInput}
+            />
+            <Menu
+              visible={menuVisible === i}
+              onDismiss={() => setMenuVisible(null)}
+              anchor={
+                <Button
+                  mode={stage.defaultSupplierId ? "contained-tonal" : "outlined"}
+                  compact
+                  icon={stage.defaultSupplierId ? "check-circle-outline" : "account-hard-hat"}
+                  onPress={() => setMenuVisible(i)}
+                  style={styles.supplierBtn}
+                  labelStyle={styles.supplierBtnLabel}
+                >
+                  {stage.defaultSupplierId
+                    ? getSupplierName(stage.defaultSupplierId)
+                    : "Tedarikçi Seç"}
+                </Button>
+              }
+            >
+              {suppliers.length === 0 ? (
+                <Menu.Item title="Önce tedarikçi ekleyin" disabled />
+              ) : (
+                suppliers.map((s) => (
+                  <Menu.Item
+                    key={s.id}
+                    title={s.name}
+                    leadingIcon={
+                      s.id === stage.defaultSupplierId
+                        ? "check"
+                        : "account-outline"
+                    }
+                    onPress={() => {
+                      updateStage(i, "defaultSupplierId", s.id!);
+                      setMenuVisible(null);
+                      setError("");
+                    }}
+                  />
+                ))
+              )}
+            </Menu>
+          </Surface>
+        ))}
+
+        <Button
+          mode="outlined"
+          icon="plus-circle-outline"
+          onPress={addStage}
+          style={styles.addBtn}
+        >
+          Aşama Ekle
+        </Button>
+      </Surface>
+
+      {error !== "" && (
+        <HelperText type="error" visible style={styles.errorText}>
+          {error}
+        </HelperText>
+      )}
 
       <Button
         mode="contained"
@@ -206,26 +259,71 @@ export default function ProductForm() {
         loading={loading}
         disabled={loading}
         style={styles.saveBtn}
+        contentStyle={styles.saveBtnContent}
+        icon={isEdit ? "content-save-outline" : "check-circle-outline"}
       >
-        {isEdit ? "Güncelle" : "Kaydet"}
+        {isEdit ? "Güncelle" : "Ürünü Kaydet"}
       </Button>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#f5f5f5" },
-  heading: { marginBottom: 16, fontWeight: "bold" },
-  input: { marginBottom: 12 },
-  stagesHeading: { marginTop: 8, marginBottom: 12, fontWeight: "bold" },
-  stageCard: { padding: 12, borderRadius: 8, marginBottom: 12 },
+  container: { flex: 1, padding: 16, backgroundColor: "#f0f2f5" },
+  card: {
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+    backgroundColor: "#fff",
+  },
+  heading: { fontWeight: "bold", color: "#1a1a1a" },
+  subtitle: { color: "#888", marginTop: 4 },
+  divider: { marginVertical: 16 },
+  input: { marginBottom: 14, backgroundColor: "#fff" },
+  sectionTitle: { fontWeight: "bold", color: "#1a1a1a", marginBottom: 4 },
+  emptyStages: {
+    paddingVertical: 24,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  emptyText: { color: "#999" },
+  stageCard: {
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 12,
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e8e8e8",
+  },
   stageHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 8,
   },
+  stageBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#1565C0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  stageBadgeText: { color: "#fff", fontWeight: "bold", fontSize: 13 },
   stageActions: { flexDirection: "row" },
-  stageInput: { marginTop: 8 },
-  addBtn: { marginBottom: 16 },
-  saveBtn: { marginBottom: 40 },
+  stageInput: { marginBottom: 10, backgroundColor: "#fff" },
+  supplierBtn: { alignSelf: "flex-start", marginTop: 2 },
+  supplierBtnLabel: { fontSize: 13 },
+  addBtn: { marginTop: 14 },
+  errorText: { fontSize: 14, textAlign: "center", marginBottom: 8 },
+  saveBtn: {
+    marginBottom: 40,
+    borderRadius: 8,
+    backgroundColor: "#1565C0",
+  },
+  saveBtnContent: { paddingVertical: 6 },
 });

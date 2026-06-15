@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, FlatList, StyleSheet, Alert } from "react-native";
-import { FAB, List, IconButton, Text } from "react-native-paper";
+import { View, FlatList, StyleSheet } from "react-native";
+import { FAB, List, IconButton, Text, Surface } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { subscribeCustomers, deleteCustomer } from "../../src/services/customers";
 import type { Customer } from "../../src/types";
@@ -16,53 +16,59 @@ export default function Customers() {
       if (window.confirm(`"${c.name}" silinsin mi?`)) {
         deleteCustomer(c.id!);
       }
-    } else {
-      Alert.alert("Sil", `"${c.name}" silinsin mi?`, [
-        { text: "İptal" },
-        { text: "Sil", style: "destructive", onPress: () => deleteCustomer(c.id!) },
-      ]);
     }
   };
 
   return (
     <View style={styles.container}>
       {customers.length === 0 ? (
-        <Text style={styles.empty}>Henüz müşteri yok.</Text>
+        <View style={styles.emptyContainer}>
+          <Text variant="titleMedium" style={styles.emptyTitle}>
+            Henüz müşteri eklenmedi
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyDesc}>
+            Sipariş oluşturmak için önce müşteri ekleyin.
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={customers}
           keyExtractor={(item) => item.id!}
+          contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <List.Item
-              title={item.name}
-              description={item.contact}
-              right={() => (
-                <View style={styles.actions}>
-                  <IconButton
-                    icon="pencil"
-                    size={20}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/admin/customer-form",
-                        params: { id: item.id },
-                      })
-                    }
-                  />
-                  <IconButton
-                    icon="delete"
-                    size={20}
-                    onPress={() => handleDelete(item)}
-                  />
-                </View>
-              )}
-              left={() => <List.Icon icon="account-outline" />}
-              style={styles.item}
-            />
+            <Surface style={styles.item} elevation={1}>
+              <List.Item
+                title={item.name}
+                description={item.contact || "İletişim bilgisi yok"}
+                right={() => (
+                  <View style={styles.actions}>
+                    <IconButton
+                      icon="pencil-outline"
+                      size={20}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/admin/customer-form",
+                          params: { id: item.id },
+                        })
+                      }
+                    />
+                    <IconButton
+                      icon="trash-can-outline"
+                      size={20}
+                      iconColor="#E53935"
+                      onPress={() => handleDelete(item)}
+                    />
+                  </View>
+                )}
+                left={() => <List.Icon icon="account-outline" color="#4CAF50" />}
+              />
+            </Surface>
           )}
         />
       )}
       <FAB
         icon="plus"
+        label="Yeni Müşteri"
         style={styles.fab}
         onPress={() => router.push("/admin/customer-form")}
       />
@@ -71,9 +77,22 @@ export default function Customers() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  empty: { textAlign: "center", marginTop: 40, color: "#999" },
-  item: { backgroundColor: "#fff", marginHorizontal: 12, marginTop: 8, borderRadius: 8 },
+  container: { flex: 1, backgroundColor: "#f0f2f5" },
+  list: { padding: 12 },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  emptyTitle: { color: "#555", marginBottom: 8 },
+  emptyDesc: { color: "#999", textAlign: "center" },
+  item: { marginBottom: 8, borderRadius: 10, overflow: "hidden" },
   actions: { flexDirection: "row", alignItems: "center" },
-  fab: { position: "absolute", right: 16, bottom: 16 },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    backgroundColor: "#1565C0",
+  },
 });
