@@ -1,7 +1,6 @@
 import { Stack } from "expo-router";
 import { PaperProvider, MD3LightTheme } from "react-native-paper";
-import { useFonts } from "expo-font";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors } from "../src/theme/colors";
 
 const theme = {
@@ -15,22 +14,15 @@ const theme = {
 };
 
 export default function RootLayout() {
-  // İkon fontunu "MaterialCommunityIcons" adıyla yükle — react-native-paper'ın
-  // beklediği aile adı tam olarak bu. Web'de @font-face otomatik enjekte edilir.
-  const [fontsLoaded] = useFonts({
-    MaterialCommunityIcons: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"),
-  });
-
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
-    <PaperProvider theme={theme}>
+    <PaperProvider
+      theme={theme}
+      // Paper'ın tüm ikonlarını @expo/vector-icons üzerinden render et.
+      // Bu bileşen web'de kendi fontunu otomatik yükler → ikonlar düzgün çıkar.
+      settings={{
+        icon: (props) => <MaterialCommunityIcons {...(props as any)} />,
+      }}
+    >
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.primary },
@@ -48,12 +40,3 @@ export default function RootLayout() {
     </PaperProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.bg,
-  },
-});

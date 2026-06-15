@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, FlatList, StyleSheet } from "react-native";
-import { FAB, IconButton, Text, Avatar, Chip } from "react-native-paper";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { View } from "react-native";
+import { IconButton, Text, Avatar, Chip } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { subscribeProducts, deleteProduct } from "../../src/services/products";
 import type { Product } from "../../src/types";
 import { colors } from "../../src/theme/colors";
-import { MotionView } from "../../src/components/MotionView";
+import { DataTableView, Column } from "../../src/components/DataTableView";
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,116 +19,91 @@ export default function Products() {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {products.length === 0 ? (
-        <MotionView style={styles.empty}>
-          <MaterialCommunityIcons
-            name="cube-outline"
-            size={64}
-            color={colors.border}
+  const edit = (p: Product) =>
+    router.push({ pathname: "/admin/product-form", params: { id: p.id } });
+
+  const columns: Column<Product>[] = [
+    {
+      key: "name",
+      title: "Ürün Adı",
+      flex: 2.4,
+      sortValue: (p) => p.name.toLocaleLowerCase("tr"),
+      render: (p) => (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Avatar.Icon
+            size={34}
+            icon="cube-outline"
+            color="#fff"
+            style={{ backgroundColor: colors.product }}
           />
-          <Text variant="titleMedium" style={styles.emptyTitle}>
-            Henüz ürün yok
+          <Text style={{ fontWeight: "600", color: colors.textPrimary }}>
+            {p.name}
           </Text>
-          <Text variant="bodyMedium" style={styles.emptyDesc}>
-            İlk ürününüzü ve üretim rotasını tanımlayın.
-          </Text>
-        </MotionView>
-      ) : (
-        <FlatList
-          data={products}
-          keyExtractor={(item) => item.id!}
-          contentContainerStyle={styles.list}
-          renderItem={({ item, index }) => (
-            <MotionView delay={index * 60}>
-              <View style={styles.card}>
-                <Avatar.Icon
-                  size={46}
-                  icon="cube-outline"
-                  color="#fff"
-                  style={{ backgroundColor: colors.product }}
-                />
-                <View style={styles.cardBody}>
-                  <Text variant="titleMedium" style={styles.name}>
-                    {item.name}
-                  </Text>
-                  <View style={styles.metaRow}>
-                    <Chip
-                      compact
-                      style={styles.codeChip}
-                      textStyle={styles.codeChipText}
-                    >
-                      {item.code}
-                    </Chip>
-                    <Text variant="bodySmall" style={styles.stageText}>
-                      {item.stages.length} aşama
-                    </Text>
-                  </View>
-                </View>
-                <IconButton
-                  icon="pencil-outline"
-                  size={20}
-                  iconColor={colors.textSecondary}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/admin/product-form",
-                      params: { id: item.id },
-                    })
-                  }
-                />
-                <IconButton
-                  icon="trash-can-outline"
-                  size={20}
-                  iconColor={colors.danger}
-                  onPress={() => handleDelete(item)}
-                />
-              </View>
-            </MotionView>
-          )}
-        />
-      )}
-      <FAB
-        icon="plus"
-        label="Yeni Ürün"
-        color="#fff"
-        style={styles.fab}
-        onPress={() => router.push("/admin/product-form")}
-      />
-    </View>
+        </View>
+      ),
+    },
+    {
+      key: "code",
+      title: "Kod",
+      flex: 1.4,
+      sortValue: (p) => p.code.toLocaleLowerCase("tr"),
+      render: (p) => (
+        <Chip
+          compact
+          style={{ backgroundColor: "#EEF2FF", alignSelf: "flex-start", height: 26 }}
+          textStyle={{ color: colors.product, fontSize: 11, fontWeight: "600", lineHeight: 14 }}
+        >
+          {p.code}
+        </Chip>
+      ),
+    },
+    {
+      key: "stages",
+      title: "Aşama",
+      flex: 1,
+      numeric: true,
+      sortValue: (p) => p.stages.length,
+      render: (p) => (
+        <Text style={{ color: colors.textSecondary }}>{p.stages.length}</Text>
+      ),
+    },
+    {
+      key: "actions",
+      title: "İşlemler",
+      flex: 1,
+      numeric: true,
+      render: (p) => (
+        <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+          <IconButton
+            icon="pencil-outline"
+            size={20}
+            iconColor={colors.textSecondary}
+            onPress={() => edit(p)}
+          />
+          <IconButton
+            icon="trash-can-outline"
+            size={20}
+            iconColor={colors.danger}
+            onPress={() => handleDelete(p)}
+          />
+        </View>
+      ),
+    },
+  ];
+
+  return (
+    <DataTableView
+      data={products}
+      columns={columns}
+      rowKey={(p) => p.id!}
+      onRowPress={edit}
+      searchText={(p) => `${p.name} ${p.code}`}
+      searchPlaceholder="Ürün ara..."
+      addLabel="Yeni Ürün"
+      onAdd={() => router.push("/admin/product-form")}
+      emptyIcon="cube-outline"
+      emptyText="Henüz ürün yok"
+      emptyHint="İlk ürününüzü ve üretim rotasını tanımlayın."
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  list: { padding: 16, paddingBottom: 96, maxWidth: 720, width: "100%", alignSelf: "center" },
-  empty: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
-  emptyTitle: { color: colors.textSecondary, marginTop: 16, fontWeight: "700" },
-  emptyDesc: { color: colors.textMuted, textAlign: "center", marginTop: 6 },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  cardBody: { flex: 1, marginLeft: 12 },
-  name: { fontWeight: "700", color: colors.textPrimary },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
-  codeChip: { backgroundColor: "#EEF2FF", height: 26 },
-  codeChipText: { color: colors.product, fontSize: 11, fontWeight: "600", lineHeight: 14 },
-  stageText: { color: colors.textSecondary },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 24,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-  },
-});
