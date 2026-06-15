@@ -11,6 +11,9 @@ import { RgdPreset } from "./theme";
 import "primeicons/primeicons.css";
 import "./style.css";
 
+import { startListeners } from "./data/store";
+startListeners();
+
 const app = createApp(App);
 
 app.use(router);
