@@ -1,37 +1,25 @@
 {
   "name": "rgderp",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "@expo/metro-runtime": "^56.0.15",
-    "@expo/vector-icons": "^15.1.1",
-    "expo": "~56.0.11",
-    "expo-constants": "^56.0.18",
-    "expo-font": "^56.0.6",
-    "expo-linear-gradient": "^56.0.4",
-    "expo-linking": "^56.0.14",
-    "expo-router": "^56.2.10",
-    "expo-splash-screen": "^56.0.10",
-    "expo-status-bar": "~56.0.4",
+    "@primevue/themes": "^4.2.5",
     "firebase": "^12.14.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-native": "0.85.3",
-    "react-native-paper": "^5.15.3",
-    "react-native-safe-area-context": "^5.8.0",
-    "react-native-screens": "^4.25.2",
-    "react-native-vector-icons": "^10.3.0",
-    "react-native-web": "^0.21.2"
+    "primeicons": "^7.0.0",
+    "primevue": "^4.2.5",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
-  },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "private": true
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.7.3",
+    "vite": "^6.0.7",
+    "vue-tsc": "^2.2.0"
+  }
 }

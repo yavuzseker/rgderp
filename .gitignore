@@ -1,45 +1,23 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
+# build output
+dist/
+
 # Firebase
 .firebase/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
 
 # local env files
 .env
 .env*.local
 
-# typescript
-*.tsbuildinfo
+# logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
 
-# generated native folders
-/ios
-/android
+# editor / os
+.DS_Store
+*.pem
+*.tsbuildinfo
+.vscode/
