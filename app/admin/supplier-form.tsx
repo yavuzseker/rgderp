@@ -57,7 +57,8 @@ export default function SupplierForm() {
       } else {
         await addSupplier({ name, contact, accessToken });
       }
-      router.back();
+      if (router.canGoBack()) router.back();
+      else router.replace("/admin/suppliers");
     } catch (e: any) {
       setError(e.message || "Bir hata oluştu.");
     } finally {

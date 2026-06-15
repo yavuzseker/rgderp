@@ -102,7 +102,8 @@ export default function ProductForm() {
       } else {
         await addProduct(data);
       }
-      router.back();
+      if (router.canGoBack()) router.back();
+      else router.replace("/admin/products");
     } catch (e: any) {
       setError(e.message || "Bir hata oluştu.");
     } finally {

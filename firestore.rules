@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // UYARI: Bu kurallar SADECE test/MVP içindir. Tüm okuma/yazmalara izin verir.
+    // Canlı öncesi Faz 5'te token doğrulamalı / Auth tabanlı kurallarla değiştirilecek.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

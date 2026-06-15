@@ -57,7 +57,8 @@ export default function CustomerForm() {
       } else {
         await addCustomer({ name, contact, accessToken });
       }
-      router.back();
+      if (router.canGoBack()) router.back();
+      else router.replace("/admin/customers");
     } catch (e: any) {
       setError(e.message || "Bir hata oluştu.");
     } finally {
