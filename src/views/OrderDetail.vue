@@ -6,7 +6,7 @@
     <div class="summary">
       <div class="sum-left">
         <div class="sum-top">
-          <Avatar icon="pi pi-clipboard" size="large" shape="circle" style="background: #ec48991a; color: #ec4899" />
+          <Avatar icon="pi pi-clipboard" size="large" shape="circle" style="background: #1488c81a; color: #1488c8" />
           <div>
             <h2>{{ order.orderNo }}</h2>
             <p>{{ order.productName }} · {{ order.customerName }}</p>

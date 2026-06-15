@@ -27,7 +27,7 @@
       <Column field="name" header="Ürün Adı" sortable>
         <template #body="{ data }">
           <div class="cell-name">
-            <Avatar icon="pi pi-box" shape="circle" style="background: #6366f11a; color: #6366f1" />
+            <Avatar icon="pi pi-box" shape="circle" style="background: #0e74901a; color: #0e7490" />
             <span>{{ data.name }}</span>
           </div>
         </template>
@@ -192,7 +192,7 @@ function confirmDelete(p: Product) {
   background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 8px;
 }
 .stage-no {
-  width: 26px; height: 26px; border-radius: 50%; background: #4f46e5; color: #fff;
+  width: 26px; height: 26px; border-radius: 50%; background: #1488c8; color: #fff;
   display: grid; place-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
 }
 .stage-name { flex: 1.4; }

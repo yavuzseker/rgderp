@@ -1,10 +1,10 @@
 <template>
   <div class="page">
     <div class="stats">
-      <StatCard label="Aktif Sipariş" :value="activeCount" icon="pi-clipboard" color="#4f46e5" />
+      <StatCard label="Aktif Sipariş" :value="activeCount" icon="pi-clipboard" color="#1488c8" />
       <StatCard label="Üretimde" :value="inProgressCount" icon="pi-cog" color="#f59e0b" />
       <StatCard label="Tamamlanan" :value="completedCount" icon="pi-check-circle" color="#10b981" />
-      <StatCard label="Tedarikçi" :value="db.suppliers.length" icon="pi-truck" color="#06b6d4" />
+      <StatCard label="Tedarikçi" :value="db.suppliers.length" icon="pi-truck" color="#0e7490" />
     </div>
 
     <div class="grid">

@@ -1,21 +1,22 @@
 import { definePreset } from "@primevue/themes";
 import Aura from "@primevue/themes/aura";
 
-// Indigo tabanlı kurumsal palet — Aura üzerine özel primary.
+// RGD kurumsal palet — logodaki canlı mavi tabanlı primary.
+// (Logodaki gri ton, aşağıdaki nötr surface/slate skalasıyla zaten uyumlu.)
 export const RgdPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: "#eef2ff",
-      100: "#e0e7ff",
-      200: "#c7d2fe",
-      300: "#a5b4fc",
-      400: "#818cf8",
-      500: "#4f46e5",
-      600: "#4338ca",
-      700: "#3730a3",
-      800: "#312e81",
-      900: "#28235f",
-      950: "#1e1b4b",
+      50: "#ecf6fc",
+      100: "#cfe8f8",
+      200: "#a1d2f0",
+      300: "#66b8e6",
+      400: "#2f9ddb",
+      500: "#1488c8",
+      600: "#0f6fa6",
+      700: "#115c88",
+      800: "#154d6f",
+      900: "#16405d",
+      950: "#0c2840",
     },
     colorScheme: {
       light: {

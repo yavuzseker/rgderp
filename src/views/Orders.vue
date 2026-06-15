@@ -30,7 +30,7 @@
       <Column field="orderNo" header="Sipariş No" sortable>
         <template #body="{ data }">
           <div class="cell-name">
-            <Avatar icon="pi pi-clipboard" shape="circle" style="background: #ec48991a; color: #ec4899" />
+            <Avatar icon="pi pi-clipboard" shape="circle" style="background: #1488c81a; color: #1488c8" />
             <span class="mono">{{ data.orderNo }}</span>
           </div>
         </template>
@@ -179,9 +179,9 @@ function goDetail(e: { data: Order }) {
 .prog span { font-size: 12px; color: #64748b; width: 34px; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .opt { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; }
-.route-preview { background: #eef2ff; border-radius: 12px; padding: 14px; }
-.rp-title { font-size: 12px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.4px; }
+.route-preview { background: #ecf6fc; border-radius: 12px; padding: 14px; }
+.rp-title { font-size: 12px; font-weight: 700; color: #0f6fa6; text-transform: uppercase; letter-spacing: 0.4px; }
 .rp-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
-.rp-step { font-size: 13px; color: #312e81; background: #fff; padding: 4px 10px; border-radius: 8px; }
-.rp-arrow { color: #a5b4fc; font-size: 12px; }
+.rp-step { font-size: 13px; color: #115c88; background: #fff; padding: 4px 10px; border-radius: 8px; }
+.rp-arrow { color: #66b8e6; font-size: 12px; }
 </style>

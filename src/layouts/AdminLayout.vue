@@ -99,9 +99,9 @@ function isActive(to: string) {
 .sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: #1e1b4b;
-  background: linear-gradient(180deg, #312e81 0%, #1e1b4b 100%);
-  color: #e0e7ff;
+  background: #0c2840;
+  background: linear-gradient(180deg, #115c88 0%, #0c2840 100%);
+  color: #cfe8f8;
   display: flex;
   flex-direction: column;
   padding: 18px 14px;
@@ -141,7 +141,7 @@ function isActive(to: string) {
 }
 .brand-sub {
   font-size: 11.5px;
-  color: #a5b4fc;
+  color: #66b8e6;
 }
 
 .nav {
@@ -156,7 +156,7 @@ function isActive(to: string) {
   gap: 12px;
   padding: 11px 12px;
   border-radius: 10px;
-  color: #c7d2fe;
+  color: #a1d2f0;
   font-weight: 500;
   font-size: 14.5px;
   transition: background 0.15s ease, color 0.15s ease;
@@ -170,9 +170,9 @@ function isActive(to: string) {
   color: #fff;
 }
 .nav-item.active {
-  background: rgba(129, 140, 248, 0.22);
+  background: rgba(47, 157, 219, 0.22);
   color: #fff;
-  box-shadow: inset 3px 0 0 #a5b4fc;
+  box-shadow: inset 3px 0 0 #66b8e6;
 }
 
 .demo-card {
@@ -184,7 +184,7 @@ function isActive(to: string) {
   border-radius: 12px;
   padding: 12px;
   font-size: 12px;
-  color: #c7d2fe;
+  color: #a1d2f0;
 }
 .demo-card i {
   color: #fbbf24;
@@ -197,7 +197,7 @@ function isActive(to: string) {
 .demo-card p {
   margin: 4px 0 0;
   line-height: 1.4;
-  color: #a5b4fc;
+  color: #7fb4d6;
 }
 
 /* Main */
@@ -227,7 +227,7 @@ function isActive(to: string) {
   flex: 1;
 }
 .user-avatar {
-  background: #4f46e5;
+  background: #1488c8;
   color: #fff;
   font-weight: 700;
 }
