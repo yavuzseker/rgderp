@@ -1,46 +1,59 @@
 import { Stack } from "expo-router";
 import { PaperProvider, MD3LightTheme } from "react-native-paper";
-import { Platform } from "react-native";
+import { useFonts } from "expo-font";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { colors } from "../src/theme/colors";
 
 const theme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: "#1565C0",
-    secondary: "#42A5F5",
+    primary: colors.primary,
+    secondary: colors.accent,
+    background: colors.bg,
   },
 };
 
-if (Platform.OS === "web") {
-  const iconFont = require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf");
-  const style = document.createElement("style");
-  style.textContent = `@font-face { font-family: 'MaterialCommunityIcons'; src: url(${iconFont}) format('truetype'); }`;
-  document.head.appendChild(style);
-}
-
 export default function RootLayout() {
+  // İkon fontunu "MaterialCommunityIcons" adıyla yükle — react-native-paper'ın
+  // beklediği aile adı tam olarak bu. Web'de @font-face otomatik enjekte edilir.
+  const [fontsLoaded] = useFonts({
+    MaterialCommunityIcons: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <PaperProvider theme={theme}>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#1565C0" },
+          headerStyle: { backgroundColor: colors.primary },
           headerTintColor: "#fff",
+          headerTitleStyle: { fontWeight: "700" },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.bg },
         }}
       >
-        <Stack.Screen name="index" options={{ title: "RGD-ERP" }} />
-        <Stack.Screen
-          name="admin"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="supplier"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="customer"
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="supplier" options={{ headerShown: false }} />
+        <Stack.Screen name="customer" options={{ headerShown: false }} />
       </Stack>
     </PaperProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.bg,
+  },
+});
