@@ -4,6 +4,12 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: "/rgd",
+      name: "landing",
+      component: () => import("./views/Landing.vue"),
+      meta: { title: "RGD · Kurumsal" },
+    },
+    {
       path: "/",
       component: () => import("./layouts/AdminLayout.vue"),
       children: [
