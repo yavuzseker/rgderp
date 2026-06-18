@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rgdMark" x1="32" y1="6" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#46B2E6"/>
+      <stop offset="1" stop-color="#1A6FB0"/>
+    </linearGradient>
+  </defs>
+  <!-- üçgen (dağ) -->
+  <path d="M32 7 57 55 7 55 Z" fill="url(#rgdMark)"/>
+  <!-- beyaz dalga (negatif boşluk) -->
+  <path d="M7 55 C19 41 27 48 35 52.5 C41.5 56 50 55 57 55 L7 55 Z" fill="#FFFFFF"/>
+  <!-- alt mavi dalga vurgusu -->
+  <path d="M7 55 C19 45 26 50 33 53.5 L7 55 Z" fill="#82CDEF"/>
+</svg>

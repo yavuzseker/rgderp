@@ -3,7 +3,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ collapsed }">
       <div class="brand">
-        <div class="brand-logo"><i class="pi pi-bolt" /></div>
+        <div class="brand-logo"><img src="/logo-mark.svg" alt="RGD" /></div>
         <div v-if="!collapsed" class="brand-text">
           <span class="brand-name">RGD-ERP</span>
           <span class="brand-sub">Üretim Takip</span>
@@ -111,12 +111,16 @@ function isActive(to: string) {
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.12);
+  background: #fff;
   display: grid;
   place-items: center;
-  font-size: 20px;
-  color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+.brand-logo img {
+  width: 28px;
+  height: 28px;
+  display: block;
 }
 .brand-text {
   display: flex;
