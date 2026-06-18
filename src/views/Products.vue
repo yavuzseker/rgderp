@@ -103,9 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { ref, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -115,17 +113,20 @@ import Select from "primevue/select";
 import Avatar from "primevue/avatar";
 import Tag from "primevue/tag";
 import PageHeader from "@/components/PageHeader.vue";
+import { useCrudForm } from "@/composables/useCrudForm";
 import { db, saveProduct, deleteProduct, uid } from "@/data/store";
 import type { Product, StageTemplate } from "@/types";
 
-const confirm = useConfirm();
-const toast = useToast();
-
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
-const dialog = ref(false);
-const submitted = ref(false);
-const empty = (): Partial<Product> => ({ name: "", code: "", stages: [] });
-const form = reactive<Partial<Product>>(empty());
+
+const { dialog, submitted, form, openNew, openEdit, save, confirmDelete } = useCrudForm<Partial<Product>>({
+  empty: () => ({ name: "", code: "", stages: [] }),
+  save: (v) => saveProduct(v as Product),
+  remove: deleteProduct,
+  clone: (v) => ({ ...v, stages: (v.stages ?? []).map((s) => ({ ...s })) }),
+  validate: (v) => !!v.name?.trim() && !!v.code?.trim() && !stageError.value,
+  label: (v) => v.name ?? "",
+});
 
 const stageError = computed(() => {
   if (!form.stages?.length) return "En az bir aşama ekleyin.";
@@ -142,38 +143,6 @@ function addStage() {
 function move(i: number, dir: -1 | 1) {
   const a = form.stages!;
   [a[i], a[i + dir]] = [a[i + dir], a[i]];
-}
-function openNew() {
-  Object.assign(form, empty());
-  delete form.id;
-  submitted.value = false;
-  dialog.value = true;
-}
-function openEdit(p: Product) {
-  Object.assign(form, { ...p, stages: p.stages.map((s) => ({ ...s })) });
-  submitted.value = false;
-  dialog.value = true;
-}
-function save() {
-  submitted.value = true;
-  if (!form.name?.trim() || !form.code?.trim() || stageError.value) return;
-  saveProduct(form as Product);
-  toast.add({ severity: "success", summary: form.id ? "Güncellendi" : "Eklendi", detail: form.name, life: 2500 });
-  dialog.value = false;
-}
-function confirmDelete(p: Product) {
-  confirm.require({
-    header: "Silme onayı",
-    message: `"${p.name}" silinsin mi?`,
-    icon: "pi pi-exclamation-triangle",
-    acceptLabel: "Sil",
-    rejectLabel: "Vazgeç",
-    acceptProps: { severity: "danger" },
-    accept: () => {
-      deleteProduct(p.id);
-      toast.add({ severity: "info", summary: "Silindi", detail: p.name, life: 2500 });
-    },
-  });
 }
 </script>
 

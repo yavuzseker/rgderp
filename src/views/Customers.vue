@@ -80,9 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { ref } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -91,50 +89,19 @@ import InputText from "primevue/inputtext";
 import InputGroup from "primevue/inputgroup";
 import Avatar from "primevue/avatar";
 import PageHeader from "@/components/PageHeader.vue";
+import { useCrudForm } from "@/composables/useCrudForm";
 import { db, saveCustomer, deleteCustomer, token } from "@/data/store";
 import type { Customer } from "@/types";
 
-const confirm = useConfirm();
-const toast = useToast();
-
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
-const dialog = ref(false);
-const submitted = ref(false);
-const empty = (): Partial<Customer> => ({ name: "", contact: "", accessToken: token() });
-const form = reactive<Partial<Customer>>(empty());
 
-function openNew() {
-  Object.assign(form, empty());
-  delete form.id;
-  submitted.value = false;
-  dialog.value = true;
-}
-function openEdit(c: Customer) {
-  Object.assign(form, { ...c });
-  submitted.value = false;
-  dialog.value = true;
-}
-function save() {
-  submitted.value = true;
-  if (!form.name?.trim()) return;
-  saveCustomer(form as Customer);
-  toast.add({ severity: "success", summary: form.id ? "Güncellendi" : "Eklendi", detail: form.name, life: 2500 });
-  dialog.value = false;
-}
-function confirmDelete(c: Customer) {
-  confirm.require({
-    header: "Silme onayı",
-    message: `"${c.name}" silinsin mi?`,
-    icon: "pi pi-exclamation-triangle",
-    acceptLabel: "Sil",
-    rejectLabel: "Vazgeç",
-    acceptProps: { severity: "danger" },
-    accept: () => {
-      deleteCustomer(c.id);
-      toast.add({ severity: "info", summary: "Silindi", detail: c.name, life: 2500 });
-    },
-  });
-}
+const { dialog, submitted, form, openNew, openEdit, save, confirmDelete } = useCrudForm<Partial<Customer>>({
+  empty: () => ({ name: "", contact: "", accessToken: token() }),
+  save: (v) => saveCustomer(v as Customer),
+  remove: deleteCustomer,
+  validate: (v) => !!v.name?.trim(),
+  label: (v) => v.name ?? "",
+});
 </script>
 
 <style scoped>
