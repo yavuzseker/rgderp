@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// UYARI: Bu kurallar SADECE test/MVP içindir. Tüm okuma/yazmalara izin verir.
+// Canlı öncesi Faz 5'te Auth/token tabanlı kurallarla değiştirilecek.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -38,6 +38,17 @@ export interface OrderStage {
   scrapQty: number;
 }
 
+export interface ShipmentDoc {
+  id: string;
+  orderId: string;
+  name: string; // orijinal dosya adı
+  path: string; // Storage yolu (silmek için)
+  url: string; // indirme linki
+  size: number; // bayt
+  contentType: string;
+  uploadedAt: string; // ISO
+}
+
 export interface Order {
   id: string;
   orderNo: string;

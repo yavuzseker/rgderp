@@ -2,18 +2,28 @@ import { reactive } from "vue";
 import {
   collection,
   doc,
+  query,
+  where,
+  orderBy,
   onSnapshot,
   setDoc,
   deleteDoc,
   updateDoc,
 } from "firebase/firestore";
-import { firestore } from "@/firebase";
+import {
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import { firestore, storage } from "@/firebase";
 import type {
   Product,
   Supplier,
   Customer,
   Order,
   OrderStage,
+  ShipmentDoc,
 } from "@/types";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -215,4 +225,44 @@ export async function advanceStage(orderId: string, outQty: number, scrapQty: nu
     status,
     currentStageIndex,
   });
+}
+
+// ---- Sevkiyat evrakları (Firebase Storage + Firestore meta) ----
+
+/** Bir siparişin evraklarını gerçek-zamanlı dinler. Unsubscribe döner. */
+export function watchOrderDocs(orderId: string, cb: (docs: ShipmentDoc[]) => void) {
+  const q = query(
+    collection(firestore, "shipmentDocs"),
+    where("orderId", "==", orderId),
+    orderBy("uploadedAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ShipmentDoc)));
+  });
+}
+
+/** Dosyayı Storage'a yükler ve metadata'yı Firestore'a yazar. */
+export async function uploadShipmentDoc(orderId: string, file: File) {
+  const id = uid();
+  const path = `shipments/${orderId}/${id}-${file.name}`;
+  const sRef = storageRef(storage, path);
+  await uploadBytes(sRef, file);
+  const url = await getDownloadURL(sRef);
+  const data: ShipmentDoc = {
+    id,
+    orderId,
+    name: file.name,
+    path,
+    url,
+    size: file.size,
+    contentType: file.type || "application/octet-stream",
+    uploadedAt: new Date().toISOString(),
+  };
+  await setDoc(doc(firestore, "shipmentDocs", id), data);
+}
+
+/** Evrağı hem Storage'tan hem Firestore'dan siler. */
+export async function deleteShipmentDoc(d: ShipmentDoc) {
+  await deleteObject(storageRef(storage, d.path)).catch(() => {});
+  await deleteDoc(doc(firestore, "shipmentDocs", d.id));
 }

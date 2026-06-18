@@ -23,14 +23,6 @@
           <span v-if="!collapsed">{{ item.label }}</span>
         </router-link>
       </nav>
-
-      <div v-if="!collapsed" class="demo-card">
-        <i class="pi pi-database" />
-        <div>
-          <strong>Demo veri</strong>
-          <p>Şu an örnek verilerle çalışıyorsunuz. Firebase bağlantısı sonra eklenecek.</p>
-        </div>
-      </div>
     </aside>
 
     <!-- Main -->
@@ -47,7 +39,6 @@
           <h1>{{ title }}</h1>
         </div>
         <div class="spacer" />
-        <Tag value="Demo" severity="warn" rounded />
         <Avatar label="A" shape="circle" class="user-avatar" />
       </header>
 
@@ -66,7 +57,6 @@
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import Button from "primevue/button";
-import Tag from "primevue/tag";
 import Avatar from "primevue/avatar";
 
 const route = useRoute();
@@ -173,31 +163,6 @@ function isActive(to: string) {
   background: rgba(47, 157, 219, 0.22);
   color: #fff;
   box-shadow: inset 3px 0 0 #66b8e6;
-}
-
-.demo-card {
-  margin-top: auto;
-  display: flex;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 12px;
-  color: #a1d2f0;
-}
-.demo-card i {
-  color: #fbbf24;
-  font-size: 16px;
-  margin-top: 2px;
-}
-.demo-card strong {
-  color: #fff;
-}
-.demo-card p {
-  margin: 4px 0 0;
-  line-height: 1.4;
-  color: #7fb4d6;
 }
 
 /* Main */
