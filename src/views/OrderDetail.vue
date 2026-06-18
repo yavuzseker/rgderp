@@ -1,6 +1,9 @@
 <template>
   <div class="page" v-if="order">
-    <Button label="Siparişler" icon="pi pi-arrow-left" text class="back" @click="router.push('/orders')" />
+    <div class="detail-top">
+      <Button label="Siparişler" icon="pi pi-arrow-left" text class="back" @click="router.push('/orders')" />
+      <Button label="Siparişi Sil" icon="pi pi-trash" text severity="danger" @click="confirmDelete" />
+    </div>
 
     <!-- Özet kart -->
     <div class="summary">
@@ -91,6 +94,7 @@
 import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import Card from "primevue/card";
 import Timeline from "primevue/timeline";
 import Tag from "primevue/tag";
@@ -99,13 +103,14 @@ import Avatar from "primevue/avatar";
 import Knob from "primevue/knob";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
-import { getOrder, advanceStage, supplierName } from "@/data/store";
+import { getOrder, advanceStage, deleteOrder, supplierName } from "@/data/store";
 import { orderStatus, stageStatus, fmtDate, progressOf } from "@/utils";
 import type { StageStatus, OrderStage } from "@/types";
 
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const confirm = useConfirm();
 
 const order = computed(() => getOrder(route.params.id as string));
 const progress = computed(() => (order.value ? progressOf(order.value.stages) : 0));
@@ -130,11 +135,29 @@ function doAdvance() {
   advDialog.value = false;
   toast.add({ severity: "success", summary: "Aşama ilerletildi", life: 2200 });
 }
+function confirmDelete() {
+  if (!order.value) return;
+  const o = order.value;
+  confirm.require({
+    header: "Silme onayı",
+    message: `"${o.orderNo}" siparişi silinsin mi?`,
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Sil",
+    rejectLabel: "Vazgeç",
+    acceptProps: { severity: "danger" },
+    accept: () => {
+      deleteOrder(o.id);
+      toast.add({ severity: "info", summary: "Sipariş silindi", detail: o.orderNo, life: 2500 });
+      router.push("/orders");
+    },
+  });
+}
 </script>
 
 <style scoped>
 @import "@/views/table.css";
-.back { margin-bottom: 4px; align-self: flex-start; padding-left: 4px; }
+.detail-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.back { align-self: flex-start; padding-left: 4px; }
 
 .summary {
   display: flex; gap: 20px; justify-content: space-between;

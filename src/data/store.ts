@@ -155,6 +155,33 @@ export async function createOrder(input: {
 
 export const getOrder = (id: string) => db.orders.find((o) => o.id === id);
 
+export async function updateOrder(
+  id: string,
+  input: { orderNo: string; customerId: string; totalQty: number; dueDate: string }
+) {
+  const o = db.orders.find((x) => x.id === id);
+  if (!o) return;
+  const customer = db.customers.find((c) => c.id === input.customerId);
+
+  const patch: Partial<Order> = {
+    orderNo: input.orderNo,
+    customerId: input.customerId,
+    customerName: customer?.name ?? o.customerName,
+    totalQty: input.totalQty,
+    dueDate: input.dueDate,
+  };
+
+  // Sipariş henüz ilk aşamada ve çıktı verilmemişse giriş miktarını da güncelle.
+  const first = o.stages[0];
+  if (o.currentStageIndex === 0 && first?.status === "active" && first.outQty === 0) {
+    const stages = o.stages.map((s) => ({ ...s }));
+    stages[0].inQty = input.totalQty;
+    patch.stages = stages;
+  }
+
+  await updateDoc(doc(firestore, "orders", id), patch);
+}
+
 export async function deleteOrder(id: string) {
   await deleteDoc(doc(firestore, "orders", id));
 }

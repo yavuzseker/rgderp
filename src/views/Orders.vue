@@ -56,9 +56,17 @@
           <Tag :value="orderStatus[data.status].label" :severity="orderStatus[data.status].severity" />
         </template>
       </Column>
+      <Column header="" style="width: 110px">
+        <template #body="{ data }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded severity="secondary" @click.stop="openEdit(data)" v-tooltip.top="'Düzenle'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click.stop="confirmDelete(data)" v-tooltip.top="'Sil'" />
+          </div>
+        </template>
+      </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yeni Sipariş" modal :style="{ width: '560px' }">
+    <Dialog v-model:visible="dialog" :header="editId ? 'Siparişi Düzenle' : 'Yeni Sipariş'" modal :style="{ width: '560px' }">
       <div class="form">
         <div class="two">
           <div class="field">
@@ -73,11 +81,12 @@
         <div class="field">
           <label>Ürün *</label>
           <Select v-model="form.productId" :options="db.products" optionLabel="name" optionValue="id"
-            :invalid="submitted && !form.productId" placeholder="Ürün seç" fluid>
+            :invalid="submitted && !form.productId" :disabled="!!editId" placeholder="Ürün seç" fluid>
             <template #option="{ option }">
               <div class="opt"><span>{{ option.name }}</span><Tag :value="option.code" severity="secondary" /></div>
             </template>
           </Select>
+          <small v-if="editId" class="hint">Ürün değiştirilemez — üretim rotasını belirler.</small>
         </div>
         <div class="field">
           <label>Müşteri *</label>
@@ -101,7 +110,7 @@
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
-        <Button label="Sipariş Oluştur" icon="pi pi-check" @click="save" />
+        <Button :label="editId ? 'Kaydet' : 'Sipariş Oluştur'" icon="pi pi-check" @click="save" />
       </template>
     </Dialog>
   </div>
@@ -111,6 +120,7 @@
 import { ref, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -123,16 +133,18 @@ import Avatar from "primevue/avatar";
 import Tag from "primevue/tag";
 import ProgressBar from "primevue/progressbar";
 import PageHeader from "@/components/PageHeader.vue";
-import { db, createOrder } from "@/data/store";
+import { db, createOrder, updateOrder, deleteOrder } from "@/data/store";
 import { orderStatus, fmtDate, progressOf } from "@/utils";
 import type { Order } from "@/types";
 
 const router = useRouter();
 const toast = useToast();
+const confirm = useConfirm();
 
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
 const dialog = ref(false);
 const submitted = ref(false);
+const editId = ref<string | null>(null);
 
 interface Form {
   orderNo: string;
@@ -151,21 +163,58 @@ const selectedRoute = computed(() => {
 
 function openNew() {
   Object.assign(form, empty());
+  editId.value = null;
+  submitted.value = false;
+  dialog.value = true;
+}
+function openEdit(o: Order) {
+  Object.assign(form, {
+    orderNo: o.orderNo,
+    productId: o.productId,
+    customerId: o.customerId,
+    totalQty: o.totalQty,
+    dueDate: new Date(o.dueDate),
+  });
+  editId.value = o.id;
   submitted.value = false;
   dialog.value = true;
 }
 function save() {
   submitted.value = true;
   if (!form.orderNo.trim() || !form.productId || !form.customerId || !form.totalQty || !form.dueDate) return;
-  createOrder({
-    orderNo: form.orderNo,
-    productId: form.productId,
-    customerId: form.customerId,
-    totalQty: form.totalQty,
-    dueDate: form.dueDate.toISOString(),
-  });
-  toast.add({ severity: "success", summary: "Sipariş oluşturuldu", detail: form.orderNo, life: 2500 });
+  if (editId.value) {
+    updateOrder(editId.value, {
+      orderNo: form.orderNo,
+      customerId: form.customerId,
+      totalQty: form.totalQty,
+      dueDate: form.dueDate.toISOString(),
+    });
+    toast.add({ severity: "success", summary: "Sipariş güncellendi", detail: form.orderNo, life: 2500 });
+  } else {
+    createOrder({
+      orderNo: form.orderNo,
+      productId: form.productId,
+      customerId: form.customerId,
+      totalQty: form.totalQty,
+      dueDate: form.dueDate.toISOString(),
+    });
+    toast.add({ severity: "success", summary: "Sipariş oluşturuldu", detail: form.orderNo, life: 2500 });
+  }
   dialog.value = false;
+}
+function confirmDelete(o: Order) {
+  confirm.require({
+    header: "Silme onayı",
+    message: `"${o.orderNo}" siparişi silinsin mi?`,
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Sil",
+    rejectLabel: "Vazgeç",
+    acceptProps: { severity: "danger" },
+    accept: () => {
+      deleteOrder(o.id);
+      toast.add({ severity: "info", summary: "Sipariş silindi", detail: o.orderNo, life: 2500 });
+    },
+  });
 }
 function goDetail(e: { data: Order }) {
   router.push(`/orders/${e.data.id}`);
