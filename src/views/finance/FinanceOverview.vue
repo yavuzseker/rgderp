@@ -29,11 +29,11 @@
       </div>
       <div class="kpi">
         <span class="kpi-ic red"><i class="pi pi-arrow-down-left" /></span>
-        <div><b>{{ fmtMoney(totalExpense) }}</b><span>Tahmini Gider</span></div>
+        <div><b>{{ fmtMoney(totalExpense) }}</b><span>Proje Gideri (tahmini)</span></div>
       </div>
       <div class="kpi">
-        <span class="kpi-ic teal"><i class="pi pi-wallet" /></span>
-        <div><b :class="{ neg: netProfit < 0 }">{{ fmtMoney(netProfit) }}</b><span>Tahmini Net Kâr</span></div>
+        <span class="kpi-ic teal"><i class="pi pi-chart-line" /></span>
+        <div><b :class="{ neg: netProfit < 0 }">{{ fmtMoney(netProfit) }}</b><span>Proje Kârı (tahmini)</span></div>
       </div>
     </div>
 
@@ -41,19 +41,28 @@
       <!-- Nakit akışı -->
       <section class="card flow">
         <header>
-          <h3>Aylık Nakit Akışı <small>(EUR karşılığı)</small></h3>
-          <div class="legend">
-            <span><i class="dot inc" /> Gelir</span>
-            <span><i class="dot exp" /> Gider</span>
+          <div>
+            <h3>Aylık Nakit Akışı <small>(EUR karşılığı)</small></h3>
+            <p class="flow-note">Kasa + Gelirler − (Proje + Sabit + Kredi + Çek)</p>
+          </div>
+          <div class="flow-end">
+            <span>Dönem sonu tahmini kasa</span>
+            <b :class="{ neg: endCash < 0 }">{{ fmtMoney(endCash) }}</b>
           </div>
         </header>
+        <div class="legend">
+          <span><i class="dot inc" /> Gelir</span>
+          <span><i class="dot exp" /> Gider</span>
+          <span><i class="dot run" /> Kümülatif kasa</span>
+        </div>
         <div class="bars">
-          <div v-for="m in monthlyFlow" :key="m.month" class="bar-col">
+          <div v-for="m in flow" :key="m.key" class="bar-col">
             <div class="bar-pair">
-              <div class="bar inc" :style="{ height: pct(m.income) + '%' }" v-tooltip.top="fmtMoney(m.income)" />
-              <div class="bar exp" :style="{ height: pct(m.expense) + '%' }" v-tooltip.top="fmtMoney(m.expense)" />
+              <div class="bar inc" :style="{ height: pct(m.income) + '%' }" v-tooltip.top="'Gelir: ' + fmtMoney(m.income)" />
+              <div class="bar exp" :style="{ height: pct(m.expense) + '%' }" v-tooltip.top="'Gider: ' + fmtMoney(m.expense)" />
             </div>
-            <span class="bar-lbl">{{ m.month }}</span>
+            <span class="run-val" :class="{ neg: m.running < 0 }" v-tooltip.top="'Kasa: ' + fmtMoney(m.running)">{{ short(m.running) }}</span>
+            <span class="bar-lbl">{{ m.label }}</span>
           </div>
         </div>
       </section>
@@ -97,7 +106,8 @@ import { computed, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
-import { financeProjects, monthlyFlow, eurTry, cash } from "@/data/financeMock";
+import { financeProjects, eurTry, cash } from "@/data/financeMock";
+import { monthlyCashflow } from "@/finance/cashflow";
 import {
   fmtMoney,
   projectRevenue,
@@ -134,10 +144,19 @@ const totalExpense = computed(() =>
 );
 const netProfit = computed(() => totalContract.value - totalExpense.value);
 
-const flowMax = computed(() =>
-  Math.max(...monthlyFlow.flatMap((m) => [m.income, m.expense]))
-);
+const flow = computed(() => monthlyCashflow(12));
+const flowMax = computed(() => Math.max(1, ...flow.value.flatMap((m) => [m.income, m.expense])));
 const pct = (v: number) => Math.round((v / flowMax.value) * 100);
+const endCash = computed(() => flow.value.at(-1)?.running ?? 0);
+
+// Kısa para formatı: 1.2M / 340K / -50K
+function short(n: number) {
+  const a = Math.abs(n);
+  const s = n < 0 ? "-" : "";
+  if (a >= 1e6) return `${s}${(a / 1e6).toFixed(1)}M`;
+  if (a >= 1e3) return `${s}${Math.round(a / 1e3)}K`;
+  return `${Math.round(n)}`;
+}
 
 const upcoming = computed(() =>
   financeProjects
@@ -203,17 +222,27 @@ const upcoming = computed(() =>
 .card h3 { margin: 0; font-size: 15px; font-weight: 700; }
 .card h3 small { color: #94a3b8; font-weight: 500; }
 
-.legend { display: flex; gap: 14px; font-size: 12px; color: #64748b; }
+.card header { align-items: flex-start; }
+.flow-note { margin: 4px 0 0; font-size: 11.5px; color: #94a3b8; }
+.flow-end { text-align: right; }
+.flow-end span { display: block; font-size: 11px; color: #94a3b8; }
+.flow-end b { font-size: 16px; font-weight: 800; color: #10b981; }
+.flow-end b.neg { color: #ef4444; }
+
+.legend { display: flex; gap: 14px; font-size: 12px; color: #64748b; margin-bottom: 6px; }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; }
 .dot.inc { background: #1488c8; }
 .dot.exp { background: #f59e0b; }
+.dot.run { background: #10b981; }
 
-.bars { display: flex; align-items: flex-end; gap: 8px; height: 190px; padding-top: 10px; }
-.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding-top: 10px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; }
 .bar-pair { display: flex; align-items: flex-end; gap: 3px; height: 100%; width: 100%; justify-content: center; }
 .bar { width: 42%; border-radius: 4px 4px 0 0; min-height: 3px; transition: height 0.3s ease; }
 .bar.inc { background: linear-gradient(180deg, #38a6dd, #1488c8); }
 .bar.exp { background: linear-gradient(180deg, #fbbf5a, #f59e0b); }
+.run-val { font-size: 10px; font-weight: 700; color: #10b981; font-variant-numeric: tabular-nums; }
+.run-val.neg { color: #ef4444; }
 .bar-lbl { font-size: 10.5px; color: #94a3b8; white-space: nowrap; }
 
 .up-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
