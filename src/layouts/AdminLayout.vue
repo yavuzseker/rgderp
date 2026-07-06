@@ -65,6 +65,7 @@ const collapsed = ref(false);
 const nav = [
   { to: "/", label: "Genel Bakış", icon: "pi-th-large" },
   { to: "/orders", label: "Siparişler", icon: "pi-clipboard" },
+  { to: "/finance", label: "Finans", icon: "pi-wallet" },
   { to: "/products", label: "Ürünler", icon: "pi-box" },
   { to: "/suppliers", label: "Tedarikçiler", icon: "pi-truck" },
   { to: "/customers", label: "Müşteriler", icon: "pi-users" },

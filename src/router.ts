@@ -19,6 +19,7 @@ export const router = createRouter({
         { path: "customers", name: "customers", component: () => import("./views/Customers.vue"), meta: { title: "Müşteriler" } },
         { path: "orders", name: "orders", component: () => import("./views/Orders.vue"), meta: { title: "Siparişler" } },
         { path: "orders/:id", name: "order-detail", component: () => import("./views/OrderDetail.vue"), meta: { title: "Sipariş Detayı" } },
+        { path: "finance", name: "finance", component: () => import("./views/Finance.vue"), meta: { title: "Finans" } },
       ],
     },
     { path: "/:pathMatch(.*)*", redirect: "/" },
