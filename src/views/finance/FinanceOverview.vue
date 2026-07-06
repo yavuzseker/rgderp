@@ -1,5 +1,18 @@
 <template>
   <div class="fin-overview">
+    <!-- Kasa -->
+    <div class="kasa">
+      <div class="kasa-head">
+        <span><i class="pi pi-wallet" /> Kasa <small>(bugün)</small></span>
+        <Button icon="pi pi-pencil" text rounded @click="openCash" v-tooltip.top="'Düzenle'" />
+      </div>
+      <div class="kasa-figs">
+        <div class="kfig"><span>TL</span><b>{{ fmtMoney(cash.tl, "TL") }}</b></div>
+        <div class="kfig"><span>EUR</span><b>{{ fmtMoney(cash.eur, "EUR") }}</b></div>
+        <div class="kfig eq"><span>Toplam (EUR karşılığı)</span><b>{{ fmtMoney(cash.eur + cash.tl / eurTry, "EUR") }}</b></div>
+      </div>
+    </div>
+
     <!-- KPI kartları -->
     <div class="kpis">
       <div class="kpi">
@@ -65,12 +78,26 @@
         </ul>
       </section>
     </div>
+
+    <Dialog v-model:visible="cashDialog" header="Kasa Durumu" modal :style="{ width: '400px' }">
+      <div class="cash-form">
+        <div class="field"><label>TL Bakiye</label><InputNumber v-model="cashForm.tl" :min="0" fluid /></div>
+        <div class="field"><label>EUR Bakiye</label><InputNumber v-model="cashForm.eur" :min="0" fluid /></div>
+      </div>
+      <template #footer>
+        <Button label="İptal" text @click="cashDialog = false" />
+        <Button label="Kaydet" icon="pi pi-check" @click="saveCash" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { financeProjects, monthlyFlow, eurTry } from "@/data/financeMock";
+import { computed, reactive, ref } from "vue";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import InputNumber from "primevue/inputnumber";
+import { financeProjects, monthlyFlow, eurTry, cash } from "@/data/financeMock";
 import {
   fmtMoney,
   projectRevenue,
@@ -79,6 +106,19 @@ import {
   weeksLeft,
   type Currency,
 } from "@/finance/types";
+
+const cashDialog = ref(false);
+const cashForm = reactive({ tl: 0, eur: 0 });
+function openCash() {
+  cashForm.tl = cash.tl;
+  cashForm.eur = cash.eur;
+  cashDialog.value = true;
+}
+function saveCash() {
+  cash.tl = cashForm.tl;
+  cash.eur = cashForm.eur;
+  cashDialog.value = false;
+}
 
 const toEur = (n: number, cur: Currency) => (cur === "EUR" ? n : n / eurTry);
 
@@ -126,6 +166,21 @@ const upcoming = computed(() =>
 
 <style scoped>
 .fin-overview { display: flex; flex-direction: column; gap: 18px; }
+
+.kasa { background: linear-gradient(135deg, #115c88, #0c2840); color: #fff; border-radius: 16px; padding: 18px 22px; }
+.kasa-head { display: flex; align-items: center; justify-content: space-between; }
+.kasa-head span { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.kasa-head small { color: #8fc4e8; font-weight: 500; }
+.kasa-head :deep(.p-button) { color: #cfe8f8; }
+.kasa-figs { display: flex; gap: 40px; margin-top: 12px; flex-wrap: wrap; }
+.kfig span { display: block; font-size: 12px; color: #a1d2f0; margin-bottom: 3px; }
+.kfig b { font-size: 24px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+.kfig.eq { margin-left: auto; text-align: right; }
+.kfig.eq b { color: #86cff0; }
+
+.cash-form { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
+.cash-form .field { display: flex; flex-direction: column; gap: 6px; }
+.cash-form label { font-size: 13px; font-weight: 600; color: #334155; }
 
 .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
 .kpi {

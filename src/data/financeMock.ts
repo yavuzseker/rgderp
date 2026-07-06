@@ -11,7 +11,11 @@ import type {
   Loan,
   CheckItem,
   MonthlyFlow,
+  CashBalance,
 } from "@/finance/types";
+
+// Bugün kasada olan bakiye (TL + EUR ayrı) — düzenlenebilir.
+export const cash = reactive<CashBalance>({ tl: 18500000, eur: 214000 });
 
 let seq = 0;
 const pid = () => `pf${(++seq).toString().padStart(3, "0")}`;
@@ -43,6 +47,7 @@ export const financeProjects = reactive<FinanceProject[]>([
     name: "Motor Hattı",
     customer: "PSA Kenitra",
     currency: "EUR",
+    contractValue: 590000,
     milestones: build(590000, "EUR", [
       { code: "ORDER", desc: "Sipariş avansı", pct: 15, date: "2025-09-19", status: "tahsil" },
       { code: "ATPL TC", desc: "Teknik onay – teslimat TC", pct: 10, date: "2025-12-05", status: "tahsil" },
@@ -65,6 +70,7 @@ export const financeProjects = reactive<FinanceProject[]>([
     name: "PSPA",
     customer: "PSA Kenitra",
     currency: "EUR",
+    contractValue: 515000,
     milestones: build(515000, "EUR", [
       { code: "ORDER", desc: "Sipariş avansı", pct: 30, date: "2025-08-01", status: "tahsil" },
       { code: "ATMP", desc: "Üretime geçiş onayı", pct: 10, date: "2025-10-10", status: "tahsil" },
@@ -82,6 +88,7 @@ export const financeProjects = reactive<FinanceProject[]>([
     name: "K9 Decking Line",
     customer: "TOFAŞ",
     currency: "EUR",
+    contractValue: 1250000,
     milestones: build(1250000, "EUR", [
       { code: "ORDER", desc: "Sipariş avansı", pct: 15, date: "2026-03-06", status: "tahsil" },
       { code: "ATFE", desc: "FSR 15 – etüt sonu", pct: 15, date: "2026-07-24", status: "faturalandi" },
@@ -102,6 +109,7 @@ export const financeProjects = reactive<FinanceProject[]>([
     name: "Somaca FSR",
     customer: "Renault Somaca",
     currency: "EUR",
+    contractValue: 29450,
     milestones: build(29450, "EUR", [
       { code: "ATFE", desc: "%60 ATFE + ATMP", pct: 60, date: "2026-05-01", status: "tahsil" },
       { code: "ATFMR", desc: "%40 ATFMR + COP", pct: 40, date: "2026-07-24", status: "faturalandi" },
@@ -116,6 +124,7 @@ export const financeProjects = reactive<FinanceProject[]>([
     name: "Assan Koltuk Hattı",
     customer: "Assan Hanil",
     currency: "EUR",
+    contractValue: 835000,
     milestones: build(835000, "EUR", [
       { code: "ORDER", desc: "Sipariş avansı – tek ödeme", pct: 100, date: "2026-08-28", status: "bekliyor" },
     ]),
@@ -130,6 +139,7 @@ export const financeProjects = reactive<FinanceProject[]>([
     name: "Karsan Yedek Malzeme",
     customer: "Karsan",
     currency: "TL",
+    contractValue: 2800000,
     milestones: build(2800000, "TL", [
       { code: "ORDER", desc: "Peşin – tek ödeme", pct: 100, date: "2026-05-30", status: "tahsil" },
     ]),

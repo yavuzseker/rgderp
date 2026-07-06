@@ -49,16 +49,21 @@
           <Select v-model="form.projectId" :options="projectOpts" optionLabel="label" optionValue="value"
             :invalid="submitted && !form.projectId" :disabled="!!editTarget" placeholder="Sipariş / proje seç" fluid />
         </div>
+        <div v-if="selProject" class="contract-info">
+          <i class="pi pi-file-edit" /> Sözleşme Bedeli: <b>{{ fmtMoney(selProject.contractValue, selProject.currency) }}</b>
+        </div>
         <div class="two">
           <div class="field"><label>Milestone *</label>
             <Select v-model="form.code" :options="MILESTONE_OPTIONS" optionLabel="label" optionValue="code"
               :invalid="submitted && !form.code" placeholder="Kod seç" fluid @change="onCode" />
           </div>
-          <div class="field"><label>Yüzde (%)</label><InputNumber v-model="form.percent" :min="0" :max="100" fluid /></div>
+          <div class="field"><label>Yüzde (%) *</label><InputNumber v-model="form.percent" :min="0" :max="100" :invalid="submitted && !form.percent" fluid /></div>
         </div>
         <div class="field"><label>Açıklama</label><InputText v-model="form.description" placeholder="Örn: %30 ATFMR + COP" /></div>
         <div class="two">
-          <div class="field"><label>Tutar *</label><InputNumber v-model="form.amount" :min="0" :invalid="submitted && !form.amount" fluid /></div>
+          <div class="field"><label>Tutar (otomatik)</label>
+            <div class="amount-box">{{ fmtMoney(computedAmount, selProject?.currency ?? "EUR") }}</div>
+          </div>
           <div class="field"><label>Durum</label><Select v-model="form.status" :options="STATUS_OPTIONS" optionLabel="label" optionValue="value" fluid /></div>
         </div>
         <div class="field"><label>Tahmini Tarih *</label><DatePicker v-model="estDate" dateFormat="dd.mm.yy" :invalid="submitted && !estDate" showIcon fluid /></div>
@@ -87,7 +92,7 @@ import InputIcon from "primevue/inputicon";
 import { useToast } from "primevue/usetoast";
 import { financeProjects } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
-import { fmtMoney, weeksLeft, MILESTONE_STATUS, type Milestone, type MilestoneStatus } from "@/finance/types";
+import { fmtMoney, weeksLeft, milestoneAmount, MILESTONE_STATUS, type Milestone, type MilestoneStatus } from "@/finance/types";
 import { MILESTONE_OPTIONS, STATUS_OPTIONS } from "@/finance/ui";
 
 const toast = useToast();
@@ -122,9 +127,14 @@ const dialog = ref(false);
 const submitted = ref(false);
 const estDate = ref<Date | null>(null);
 const editTarget = ref<Milestone | null>(null);
-interface Form { projectId: string; code: string; percent: number; description: string; amount: number; status: MilestoneStatus; }
-const empty = (): Form => ({ projectId: "", code: "", percent: 0, description: "", amount: 0, status: "bekliyor" });
+interface Form { projectId: string; code: string; percent: number; description: string; status: MilestoneStatus; }
+const empty = (): Form => ({ projectId: "", code: "", percent: 0, description: "", status: "bekliyor" });
 const form = reactive<Form>(empty());
+
+const selProject = computed(() => financeProjects.find((p) => p.id === form.projectId));
+const computedAmount = computed(() =>
+  selProject.value ? milestoneAmount(selProject.value.contractValue, form.percent || 0) : 0
+);
 
 function onCode() {
   const opt = MILESTONE_OPTIONS.find((o) => o.code === form.code);
@@ -143,7 +153,6 @@ function openEdit(row: { pid: string; m: Milestone }) {
     code: row.m.code,
     percent: row.m.percent,
     description: row.m.description,
-    amount: row.m.amount,
     status: row.m.status,
   });
   estDate.value = row.m.estimatedDate ? new Date(row.m.estimatedDate) : null;
@@ -153,15 +162,16 @@ function openEdit(row: { pid: string; m: Milestone }) {
 }
 function save() {
   submitted.value = true;
-  if (!form.projectId || !form.code || !form.amount || !estDate.value) return;
+  if (!form.projectId || !form.code || !form.percent || !estDate.value) return;
   const p = financeProjects.find((x) => x.id === form.projectId);
   if (!p) return;
+  const amount = milestoneAmount(p.contractValue, form.percent);
   if (editTarget.value) {
     Object.assign(editTarget.value, {
       code: form.code,
       description: form.description,
       percent: form.percent,
-      amount: form.amount,
+      amount,
       estimatedDate: estDate.value.toISOString(),
       status: form.status,
     });
@@ -171,7 +181,7 @@ function save() {
       code: form.code,
       description: form.description,
       percent: form.percent,
-      amount: form.amount,
+      amount,
       currency: p.currency,
       estimatedDate: estDate.value.toISOString(),
       status: form.status,
@@ -194,4 +204,8 @@ function del(row: { pid: string; m: Milestone }) {
 .sub { color: #94a3b8; }
 .wl { color: #94a3b8; font-weight: 600; }
 .wl.over { color: #ef4444; }
+.contract-info { font-size: 13px; color: #475569; background: #f6fbfe; border: 1px solid #dbeefb; border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; }
+.contract-info i { color: #1488c8; }
+.contract-info b { color: #0f172a; }
+.amount-box { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-weight: 800; color: #1488c8; font-variant-numeric: tabular-nums; }
 </style>

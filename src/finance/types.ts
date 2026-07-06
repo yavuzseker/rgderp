@@ -50,9 +50,20 @@ export interface FinanceProject {
   name: string; // proje adı (alt başlık)
   customer: string; // firma
   currency: Currency;
+  contractValue: number; // sözleşme bedeli — milestone tutarları bunun yüzdesidir
   milestones: Milestone[];
   expenses: ExpenseItem[];
 }
+
+/** Bugün kasada olan bakiye (TL + EUR ayrı). */
+export interface CashBalance {
+  tl: number;
+  eur: number;
+}
+
+/** Sözleşme bedeli + orandan milestone tutarını hesaplar. */
+export const milestoneAmount = (contractValue: number, percent: number) =>
+  Math.round((contractValue * percent) / 100);
 
 // ---- Şirket geneli yükümlülükler ----
 export interface FixedExpense {
@@ -83,7 +94,11 @@ export interface MonthlyFlow {
 }
 
 // ---- Yardımcılar ----
-export const projectRevenue = (p: FinanceProject) =>
+// Gelir = sözleşme bedeli (milestone'lar bunun ödeme takvimidir).
+export const projectRevenue = (p: FinanceProject) => p.contractValue;
+
+// Milestone tutarları toplamı (oran toplamı %100 ise bedele eşit olmalı).
+export const milestonesTotal = (p: FinanceProject) =>
   p.milestones.reduce((s, m) => s + m.amount, 0);
 
 export const projectCollected = (p: FinanceProject) =>

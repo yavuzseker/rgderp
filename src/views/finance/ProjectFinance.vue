@@ -69,7 +69,7 @@
             <tr>
               <td colspan="2">Toplam</td>
               <td class="r">{{ totalPct }}</td>
-              <td class="r mono"><b>{{ fmtMoney(revenue, sel.currency) }}</b></td>
+              <td class="r mono"><b>{{ fmtMoney(msTotal, sel.currency) }}</b></td>
               <td colspan="2"></td>
             </tr>
           </tfoot>
@@ -116,6 +116,7 @@ import {
   projectExpense,
   projectProfit,
   projectMargin,
+  milestonesTotal,
   weeksLeft,
   MILESTONE_STATUS,
 } from "@/finance/types";
@@ -136,6 +137,7 @@ const revenue = computed(() => (sel.value ? projectRevenue(sel.value) : 0));
 const expense = computed(() => (sel.value ? projectExpense(sel.value) : 0));
 const profit = computed(() => (sel.value ? projectProfit(sel.value) : 0));
 const totalPct = computed(() => (sel.value ? sel.value.milestones.reduce((s, m) => s + m.percent, 0) : 0));
+const msTotal = computed(() => (sel.value ? milestonesTotal(sel.value) : 0));
 
 const marginClass = (m: number) => (m < 0 ? "neg" : m < 20 ? "low" : "ok");
 </script>
