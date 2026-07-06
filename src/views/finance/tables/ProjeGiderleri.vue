@@ -27,16 +27,21 @@
       <Column field="date" header="Tarih" sortable style="width: 130px">
         <template #body="{ data }">{{ fmtDate(data.date) }}</template>
       </Column>
-      <Column header="" style="width: 60px">
-        <template #body="{ data }"><Button icon="pi pi-trash" text rounded severity="danger" @click="del(data)" v-tooltip.top="'Sil'" /></template>
+      <Column header="" style="width: 100px">
+        <template #body="{ data }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="del(data)" v-tooltip.top="'Sil'" />
+          </div>
+        </template>
       </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yeni Proje Gideri" modal :style="{ width: '540px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Gideri Düzenle' : 'Yeni Proje Gideri'" modal :style="{ width: '540px' }">
       <div class="form">
         <div class="field"><label>Proje *</label>
           <Select v-model="form.projectId" :options="projectOpts" optionLabel="label" optionValue="value"
-            :invalid="submitted && !form.projectId" placeholder="Sipariş / proje seç" fluid />
+            :invalid="submitted && !form.projectId" :disabled="!!editTarget" placeholder="Sipariş / proje seç" fluid />
         </div>
         <div class="field"><label>Açıklama *</label><InputText v-model="form.description" :invalid="submitted && !form.description" placeholder="Örn: Devreye alma – 1. etap" /></div>
         <div class="two">
@@ -47,7 +52,7 @@
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
-        <Button label="Ekle" icon="pi pi-check" @click="save" />
+        <Button :label="editTarget ? 'Kaydet' : 'Ekle'" icon="pi pi-check" @click="save" />
       </template>
     </Dialog>
   </div>
@@ -97,6 +102,7 @@ const projectOpts = computed(() =>
 const dialog = ref(false);
 const submitted = ref(false);
 const date = ref<Date | null>(null);
+const editTarget = ref<ExpenseItem | null>(null);
 interface Form { projectId: string; description: string; category: string; amount: number; }
 const empty = (): Form => ({ projectId: "", description: "", category: "", amount: 0 });
 const form = reactive<Form>(empty());
@@ -104,6 +110,19 @@ const form = reactive<Form>(empty());
 function openNew() {
   Object.assign(form, empty());
   date.value = null;
+  editTarget.value = null;
+  submitted.value = false;
+  dialog.value = true;
+}
+function openEdit(row: { pid: string; e: ExpenseItem }) {
+  Object.assign(form, {
+    projectId: row.pid,
+    description: row.e.description,
+    category: row.e.category,
+    amount: row.e.amount,
+  });
+  date.value = row.e.date ? new Date(row.e.date) : null;
+  editTarget.value = row.e;
   submitted.value = false;
   dialog.value = true;
 }
@@ -112,15 +131,24 @@ function save() {
   if (!form.projectId || !form.description.trim() || !form.amount || !date.value) return;
   const p = financeProjects.find((x) => x.id === form.projectId);
   if (!p) return;
-  const item: ExpenseItem = {
-    description: form.description,
-    category: form.category || "Diğer",
-    amount: form.amount,
-    currency: p.currency,
-    date: date.value.toISOString(),
-  };
-  p.expenses.push(item);
-  toast.add({ severity: "success", summary: "Gider eklendi", detail: `${p.name} · ${form.description}`, life: 2200 });
+  if (editTarget.value) {
+    Object.assign(editTarget.value, {
+      description: form.description,
+      category: form.category || "Diğer",
+      amount: form.amount,
+      date: date.value.toISOString(),
+    });
+    toast.add({ severity: "success", summary: "Güncellendi", detail: `${p.name} · ${form.description}`, life: 2200 });
+  } else {
+    p.expenses.push({
+      description: form.description,
+      category: form.category || "Diğer",
+      amount: form.amount,
+      currency: p.currency,
+      date: date.value.toISOString(),
+    });
+    toast.add({ severity: "success", summary: "Gider eklendi", detail: `${p.name} · ${form.description}`, life: 2200 });
+  }
   dialog.value = false;
 }
 function del(row: { pid: string; e: ExpenseItem }) {

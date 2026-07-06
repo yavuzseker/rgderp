@@ -23,14 +23,17 @@
           <small class="wl" :class="{ over: weeksLeft(data.dueDate).overdue }">· {{ weeksLeft(data.dueDate).text }}</small>
         </template>
       </Column>
-      <Column header="" style="width: 70px">
-        <template #body="{ index }">
-          <Button icon="pi pi-trash" text rounded severity="danger" @click="checks.splice(index, 1)" v-tooltip.top="'Sil'" />
+      <Column header="" style="width: 110px">
+        <template #body="{ data, index }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="checks.splice(index, 1)" v-tooltip.top="'Sil'" />
+          </div>
         </template>
       </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yeni Çek" modal :style="{ width: '480px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Çek Düzenle' : 'Yeni Çek'" modal :style="{ width: '480px' }">
       <div class="form">
         <div class="two">
           <div class="field"><label>Firma *</label><InputText v-model="form.firma" autofocus :invalid="submitted && !form.firma" placeholder="Örn: Küresel Hırdavat" /></div>
@@ -44,7 +47,7 @@
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
-        <Button label="Ekle" icon="pi pi-check" @click="save" />
+        <Button :label="editTarget ? 'Kaydet' : 'Ekle'" icon="pi pi-check" @click="save" />
       </template>
     </Dialog>
   </div>
@@ -70,20 +73,35 @@ const toast = useToast();
 const dialog = ref(false);
 const submitted = ref(false);
 const dueDate = ref<Date | null>(null);
+const editTarget = ref<CheckItem | null>(null);
 const empty = (): CheckItem => ({ firma: "", bank: "", amount: 0, currency: "TL", dueDate: "" });
 const form = reactive<CheckItem>(empty());
 
 function openNew() {
   Object.assign(form, empty());
   dueDate.value = null;
+  editTarget.value = null;
+  submitted.value = false;
+  dialog.value = true;
+}
+function openEdit(item: CheckItem) {
+  Object.assign(form, item);
+  dueDate.value = item.dueDate ? new Date(item.dueDate) : null;
+  editTarget.value = item;
   submitted.value = false;
   dialog.value = true;
 }
 function save() {
   submitted.value = true;
   if (!form.firma.trim() || !form.amount || !dueDate.value) return;
-  checks.push({ ...form, dueDate: dueDate.value.toISOString() });
-  toast.add({ severity: "success", summary: "Eklendi", detail: form.firma, life: 2200 });
+  const payload = { ...form, dueDate: dueDate.value.toISOString() };
+  if (editTarget.value) {
+    Object.assign(editTarget.value, payload);
+    toast.add({ severity: "success", summary: "Güncellendi", detail: form.firma, life: 2200 });
+  } else {
+    checks.push(payload);
+    toast.add({ severity: "success", summary: "Eklendi", detail: form.firma, life: 2200 });
+  }
   dialog.value = false;
 }
 </script>

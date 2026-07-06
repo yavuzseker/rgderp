@@ -19,14 +19,17 @@
       <Column field="monthlyInstallment" header="Aylık Taksit" sortable style="width: 170px">
         <template #body="{ data }"><span class="mono">{{ fmtMoney(data.monthlyInstallment, data.currency) }}</span></template>
       </Column>
-      <Column header="" style="width: 70px">
-        <template #body="{ index }">
-          <Button icon="pi pi-trash" text rounded severity="danger" @click="loans.splice(index, 1)" v-tooltip.top="'Sil'" />
+      <Column header="" style="width: 110px">
+        <template #body="{ data, index }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="loans.splice(index, 1)" v-tooltip.top="'Sil'" />
+          </div>
         </template>
       </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yeni Kredi" modal :style="{ width: '480px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Kredi Düzenle' : 'Yeni Kredi'" modal :style="{ width: '480px' }">
       <div class="form">
         <div class="two">
           <div class="field"><label>Kredi Adı *</label><InputText v-model="form.name" autofocus :invalid="submitted && !form.name" placeholder="Örn: Garanti Kredi 40M" /></div>
@@ -40,7 +43,7 @@
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
-        <Button label="Ekle" icon="pi pi-check" @click="save" />
+        <Button :label="editTarget ? 'Kaydet' : 'Ekle'" icon="pi pi-check" @click="save" />
       </template>
     </Dialog>
   </div>
@@ -63,19 +66,32 @@ import { CUR } from "@/finance/ui";
 const toast = useToast();
 const dialog = ref(false);
 const submitted = ref(false);
+const editTarget = ref<Loan | null>(null);
 const empty = (): Loan => ({ name: "", bank: "", remaining: 0, currency: "TL", monthlyInstallment: 0 });
 const form = reactive<Loan>(empty());
 
 function openNew() {
   Object.assign(form, empty());
+  editTarget.value = null;
+  submitted.value = false;
+  dialog.value = true;
+}
+function openEdit(item: Loan) {
+  Object.assign(form, item);
+  editTarget.value = item;
   submitted.value = false;
   dialog.value = true;
 }
 function save() {
   submitted.value = true;
   if (!form.name.trim() || !form.remaining) return;
-  loans.push({ ...form });
-  toast.add({ severity: "success", summary: "Eklendi", detail: form.name, life: 2200 });
+  if (editTarget.value) {
+    Object.assign(editTarget.value, { ...form });
+    toast.add({ severity: "success", summary: "Güncellendi", detail: form.name, life: 2200 });
+  } else {
+    loans.push({ ...form });
+    toast.add({ severity: "success", summary: "Eklendi", detail: form.name, life: 2200 });
+  }
   dialog.value = false;
 }
 </script>

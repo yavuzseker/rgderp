@@ -33,16 +33,21 @@
       <Column field="status" header="Durum" sortable style="width: 130px">
         <template #body="{ data }"><Tag :value="stat(data.status).label" :severity="stat(data.status).severity" /></template>
       </Column>
-      <Column header="" style="width: 60px">
-        <template #body="{ data }"><Button icon="pi pi-trash" text rounded severity="danger" @click="del(data)" v-tooltip.top="'Sil'" /></template>
+      <Column header="" style="width: 100px">
+        <template #body="{ data }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="del(data)" v-tooltip.top="'Sil'" />
+          </div>
+        </template>
       </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yeni Alacak (Milestone)" modal :style="{ width: '540px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Alacağı Düzenle' : 'Yeni Alacak (Milestone)'" modal :style="{ width: '540px' }">
       <div class="form">
         <div class="field"><label>Proje *</label>
           <Select v-model="form.projectId" :options="projectOpts" optionLabel="label" optionValue="value"
-            :invalid="submitted && !form.projectId" placeholder="Sipariş / proje seç" fluid />
+            :invalid="submitted && !form.projectId" :disabled="!!editTarget" placeholder="Sipariş / proje seç" fluid />
         </div>
         <div class="two">
           <div class="field"><label>Milestone *</label>
@@ -60,7 +65,7 @@
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
-        <Button label="Ekle" icon="pi pi-check" @click="save" />
+        <Button :label="editTarget ? 'Kaydet' : 'Ekle'" icon="pi pi-check" @click="save" />
       </template>
     </Dialog>
   </div>
@@ -116,6 +121,7 @@ const projectOpts = computed(() =>
 const dialog = ref(false);
 const submitted = ref(false);
 const estDate = ref<Date | null>(null);
+const editTarget = ref<Milestone | null>(null);
 interface Form { projectId: string; code: string; percent: number; description: string; amount: number; status: MilestoneStatus; }
 const empty = (): Form => ({ projectId: "", code: "", percent: 0, description: "", amount: 0, status: "bekliyor" });
 const form = reactive<Form>(empty());
@@ -127,6 +133,21 @@ function onCode() {
 function openNew() {
   Object.assign(form, empty());
   estDate.value = null;
+  editTarget.value = null;
+  submitted.value = false;
+  dialog.value = true;
+}
+function openEdit(row: { pid: string; m: Milestone }) {
+  Object.assign(form, {
+    projectId: row.pid,
+    code: row.m.code,
+    percent: row.m.percent,
+    description: row.m.description,
+    amount: row.m.amount,
+    status: row.m.status,
+  });
+  estDate.value = row.m.estimatedDate ? new Date(row.m.estimatedDate) : null;
+  editTarget.value = row.m;
   submitted.value = false;
   dialog.value = true;
 }
@@ -135,17 +156,28 @@ function save() {
   if (!form.projectId || !form.code || !form.amount || !estDate.value) return;
   const p = financeProjects.find((x) => x.id === form.projectId);
   if (!p) return;
-  const ms: Milestone = {
-    code: form.code,
-    description: form.description,
-    percent: form.percent,
-    amount: form.amount,
-    currency: p.currency,
-    estimatedDate: estDate.value.toISOString(),
-    status: form.status,
-  };
-  p.milestones.push(ms);
-  toast.add({ severity: "success", summary: "Alacak eklendi", detail: `${p.name} · ${form.code}`, life: 2200 });
+  if (editTarget.value) {
+    Object.assign(editTarget.value, {
+      code: form.code,
+      description: form.description,
+      percent: form.percent,
+      amount: form.amount,
+      estimatedDate: estDate.value.toISOString(),
+      status: form.status,
+    });
+    toast.add({ severity: "success", summary: "Güncellendi", detail: `${p.name} · ${form.code}`, life: 2200 });
+  } else {
+    p.milestones.push({
+      code: form.code,
+      description: form.description,
+      percent: form.percent,
+      amount: form.amount,
+      currency: p.currency,
+      estimatedDate: estDate.value.toISOString(),
+      status: form.status,
+    });
+    toast.add({ severity: "success", summary: "Alacak eklendi", detail: `${p.name} · ${form.code}`, life: 2200 });
+  }
   dialog.value = false;
 }
 function del(row: { pid: string; m: Milestone }) {

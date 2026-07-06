@@ -11,17 +11,45 @@
       </div>
 
       <nav class="nav">
-        <router-link
-          v-for="item in nav"
-          :key="item.to"
-          :to="item.to"
-          class="nav-item"
-          :class="{ active: isActive(item.to) }"
-          v-tooltip.right="collapsed ? item.label : undefined"
-        >
-          <i :class="['pi', item.icon]" />
-          <span v-if="!collapsed">{{ item.label }}</span>
-        </router-link>
+        <template v-for="item in nav" :key="item.label">
+          <!-- Alt menüsü olmayan normal öğe -->
+          <router-link
+            v-if="!item.children"
+            :to="item.to!"
+            class="nav-item"
+            :class="{ active: isActive(item.to!) }"
+            v-tooltip.right="collapsed ? item.label : undefined"
+          >
+            <i :class="['pi', item.icon]" />
+            <span v-if="!collapsed">{{ item.label }}</span>
+          </router-link>
+
+          <!-- Açılır grup (Finans) -->
+          <template v-else>
+            <button
+              class="nav-item nav-group"
+              :class="{ active: groupActive(item) }"
+              @click="toggle(item.label)"
+              v-tooltip.right="collapsed ? item.label : undefined"
+            >
+              <i :class="['pi', item.icon]" />
+              <span v-if="!collapsed">{{ item.label }}</span>
+              <i v-if="!collapsed" class="pi pi-chevron-down chev" :class="{ open: isOpen(item.label) }" />
+            </button>
+            <div v-if="!collapsed && isOpen(item.label)" class="subnav">
+              <router-link
+                v-for="c in item.children"
+                :key="c.to"
+                :to="c.to"
+                class="nav-sub"
+                :class="{ active: subActive(c) }"
+              >
+                <i :class="['pi', c.icon]" />
+                <span>{{ c.label }}</span>
+              </router-link>
+            </div>
+          </template>
+        </template>
       </nav>
     </aside>
 
@@ -62,10 +90,25 @@ import Avatar from "primevue/avatar";
 const route = useRoute();
 const collapsed = ref(false);
 
-const nav = [
+interface SubItem { to: string; label: string; icon: string; exact?: boolean }
+interface NavItem { to?: string; label: string; icon: string; children?: SubItem[] }
+
+const nav: NavItem[] = [
   { to: "/", label: "Genel Bakış", icon: "pi-th-large" },
   { to: "/orders", label: "Siparişler", icon: "pi-clipboard" },
-  { to: "/finance", label: "Finans", icon: "pi-wallet" },
+  {
+    label: "Finans",
+    icon: "pi-wallet",
+    children: [
+      { to: "/finance", label: "Genel Bakış", icon: "pi-chart-bar", exact: true },
+      { to: "/finance/projeler", label: "Proje Finansı", icon: "pi-folder" },
+      { to: "/finance/gelirler", label: "Gelirler", icon: "pi-arrow-down-left" },
+      { to: "/finance/giderler", label: "Proje Giderleri", icon: "pi-arrow-up-right" },
+      { to: "/finance/sabit", label: "Sabit Giderler", icon: "pi-refresh" },
+      { to: "/finance/krediler", label: "Krediler", icon: "pi-percentage" },
+      { to: "/finance/cekler", label: "Çekler", icon: "pi-money-bill" },
+    ],
+  },
   { to: "/products", label: "Ürünler", icon: "pi-box" },
   { to: "/suppliers", label: "Tedarikçiler", icon: "pi-truck" },
   { to: "/customers", label: "Müşteriler", icon: "pi-users" },
@@ -73,9 +116,20 @@ const nav = [
 
 const title = computed(() => (route.meta.title as string) ?? "RGD-ERP");
 
+// Açık gruplar — Finans, ilgili sayfadaysak otomatik açık.
+const openGroups = ref<Record<string, boolean>>({ Finans: route.path.startsWith("/finance") });
+const isOpen = (label: string) => !!openGroups.value[label];
+const toggle = (label: string) => (openGroups.value[label] = !openGroups.value[label]);
+
 function isActive(to: string) {
   if (to === "/") return route.path === "/";
   return route.path.startsWith(to);
+}
+function subActive(c: SubItem) {
+  return c.exact ? route.path === c.to : route.path.startsWith(c.to);
+}
+function groupActive(item: NavItem) {
+  return (item.children ?? []).some((c) => route.path.startsWith(c.to));
 }
 </script>
 
@@ -168,6 +222,55 @@ function isActive(to: string) {
   background: rgba(47, 157, 219, 0.22);
   color: #fff;
   box-shadow: inset 3px 0 0 #66b8e6;
+}
+
+/* Açılır grup başlığı */
+.nav-group {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.nav-group .chev {
+  margin-left: auto;
+  font-size: 12px;
+  transition: transform 0.18s ease;
+}
+.nav-group .chev.open {
+  transform: rotate(180deg);
+}
+
+/* Alt menü */
+.subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 4px 14px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+.nav-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #a1d2f0;
+  font-size: 13.5px;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+.nav-sub i {
+  font-size: 14px;
+}
+.nav-sub:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+.nav-sub.active {
+  background: rgba(47, 157, 219, 0.2);
+  color: #fff;
 }
 
 /* Main */

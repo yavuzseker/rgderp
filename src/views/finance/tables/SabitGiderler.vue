@@ -16,14 +16,17 @@
       <Column field="amount" header="Tutar" sortable style="width: 180px">
         <template #body="{ data }"><span class="mono">{{ fmtMoney(data.amount, data.currency) }}</span></template>
       </Column>
-      <Column header="" style="width: 70px">
-        <template #body="{ index }">
-          <Button icon="pi pi-trash" text rounded severity="danger" @click="remove(index)" v-tooltip.top="'Sil'" />
+      <Column header="" style="width: 110px">
+        <template #body="{ data, index }">
+          <div class="row-actions">
+            <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="remove(index)" v-tooltip.top="'Sil'" />
+          </div>
         </template>
       </Column>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" header="Yeni Sabit Gider" modal :style="{ width: '440px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Sabit Gider Düzenle' : 'Yeni Sabit Gider'" modal :style="{ width: '440px' }">
       <div class="form">
         <div class="field"><label>Kalem *</label><InputText v-model="form.name" autofocus :invalid="submitted && !form.name" placeholder="Örn: Kira" /></div>
         <div class="two">
@@ -34,7 +37,7 @@
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
-        <Button label="Ekle" icon="pi pi-check" @click="save" />
+        <Button :label="editTarget ? 'Kaydet' : 'Ekle'" icon="pi pi-check" @click="save" />
       </template>
     </Dialog>
   </div>
@@ -57,19 +60,32 @@ import { CUR } from "@/finance/ui";
 const toast = useToast();
 const dialog = ref(false);
 const submitted = ref(false);
+const editTarget = ref<FixedExpense | null>(null);
 const empty = (): FixedExpense => ({ name: "", amount: 0, currency: "TL", dayOfMonth: 1 });
 const form = reactive<FixedExpense>(empty());
 
 function openNew() {
   Object.assign(form, empty());
+  editTarget.value = null;
+  submitted.value = false;
+  dialog.value = true;
+}
+function openEdit(item: FixedExpense) {
+  Object.assign(form, item);
+  editTarget.value = item;
   submitted.value = false;
   dialog.value = true;
 }
 function save() {
   submitted.value = true;
   if (!form.name.trim() || !form.amount) return;
-  fixedExpenses.push({ ...form });
-  toast.add({ severity: "success", summary: "Eklendi", detail: form.name, life: 2200 });
+  if (editTarget.value) {
+    Object.assign(editTarget.value, { ...form });
+    toast.add({ severity: "success", summary: "Güncellendi", detail: form.name, life: 2200 });
+  } else {
+    fixedExpenses.push({ ...form });
+    toast.add({ severity: "success", summary: "Eklendi", detail: form.name, life: 2200 });
+  }
   dialog.value = false;
 }
 function remove(i: number) {
