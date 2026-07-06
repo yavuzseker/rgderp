@@ -1,5 +1,7 @@
 // Finans modülü için örnek (dummy) veri. Excel "BÜTÇE PLANI" yapısından türetildi.
-// Firestore'a geçince bu dosya gerçek sorgularla değişecek.
+// Reaktif diziler — ekleme/silme oturum boyunca çalışır. Firestore'a geçince
+// bu dosya gerçek sorgularla değişecek.
+import { reactive } from "vue";
 import type {
   FinanceProject,
   Milestone,
@@ -13,6 +15,7 @@ import type {
 
 let seq = 0;
 const pid = () => `pf${(++seq).toString().padStart(3, "0")}`;
+export const finUid = () => `f${Date.now().toString(36)}${(++seq).toString(36)}`;
 
 interface MSInput {
   code: string;
@@ -33,7 +36,7 @@ function build(contract: number, cur: Currency, rows: MSInput[]): Milestone[] {
   }));
 }
 
-export const financeProjects: FinanceProject[] = [
+export const financeProjects = reactive<FinanceProject[]>([
   {
     id: pid(),
     orderNo: "SP-2026-002",
@@ -134,7 +137,7 @@ export const financeProjects: FinanceProject[] = [
       { description: "Yedek parça tedarik", category: "Malzeme", amount: 1650000, currency: "TL", date: "2026-04-20" },
     ],
   },
-];
+]);
 
 // EUR/TL varsayılan kur (haftalık TCMB — dummy)
 export const eurTry = 47.5;
@@ -155,7 +158,7 @@ export const monthlyFlow: MonthlyFlow[] = [
   { month: "Oca 27", income: 340000, expense: 168000 },
 ];
 
-export const fixedExpenses: FixedExpense[] = [
+export const fixedExpenses = reactive<FixedExpense[]>([
   { name: "Maaş / Tazminat", amount: 4200000, currency: "TL", dayOfMonth: 5 },
   { name: "SGK", amount: 980000, currency: "TL", dayOfMonth: 20 },
   { name: "Stopaj", amount: 420000, currency: "TL", dayOfMonth: 26 },
@@ -164,20 +167,20 @@ export const fixedExpenses: FixedExpense[] = [
   { name: "Elektrik", amount: 480000, currency: "TL", dayOfMonth: 15 },
   { name: "Su", amount: 42000, currency: "TL", dayOfMonth: 15 },
   { name: "Telefon + İnternet", amount: 38000, currency: "TL", dayOfMonth: 10 },
-];
+]);
 
-export const loans: Loan[] = [
+export const loans = reactive<Loan[]>([
   { name: "Garanti Kredi 40M", bank: "Garanti", remaining: 35513242, currency: "TL", monthlyInstallment: 2100000 },
   { name: "Kuveyt EUR Kredi", bank: "Kuveyt Türk", remaining: 813458, currency: "EUR", monthlyInstallment: 42000 },
   { name: "TEB 10M Exim", bank: "TEB", remaining: 12230000, currency: "TL", monthlyInstallment: 950000 },
   { name: "TF Leasing", bank: "TF", remaining: 10509994, currency: "TL", monthlyInstallment: 620000 },
   { name: "YPK 5M", bank: "YPK", remaining: 5000000, currency: "TL", monthlyInstallment: 410000 },
-];
+]);
 
-export const checks: CheckItem[] = [
+export const checks = reactive<CheckItem[]>([
   { firma: "Küresel Hırdavat", bank: "Halkbank", amount: 193000, currency: "TL", dueDate: "2026-07-10" },
   { firma: "Kalitek", bank: "Halkbank", amount: 49000, currency: "TL", dueDate: "2026-07-10" },
   { firma: "Körüstan Bursa Sac", bank: "Garanti", amount: 320000, currency: "TL", dueDate: "2026-07-18" },
   { firma: "İsse Makina", bank: "Halkbank", amount: 100000, currency: "TL", dueDate: "2026-07-25" },
   { firma: "Entek Global Makina", bank: "ING", amount: 35301, currency: "TL", dueDate: "2026-08-02" },
-];
+]);
