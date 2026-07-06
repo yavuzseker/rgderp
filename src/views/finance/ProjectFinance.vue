@@ -110,16 +110,14 @@ import { ref, computed } from "vue";
 import Tag from "primevue/tag";
 import { financeProjects } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
+import { fmtMoney, weeksLeft, MILESTONE_STATUS } from "@/finance/types";
 import {
-  fmtMoney,
   projectRevenue,
   projectExpense,
   projectProfit,
   projectMargin,
   milestonesTotal,
-  weeksLeft,
-  MILESTONE_STATUS,
-} from "@/finance/types";
+} from "@/finance/calc";
 
 const selectedId = ref(financeProjects[0]?.id ?? "");
 const sel = computed(() => financeProjects.find((p) => p.id === selectedId.value));

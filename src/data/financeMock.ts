@@ -10,7 +10,6 @@ import type {
   FixedExpense,
   Loan,
   CheckItem,
-  MonthlyFlow,
   CashBalance,
 } from "@/finance/types";
 
@@ -151,22 +150,6 @@ export const financeProjects = reactive<FinanceProject[]>([
 
 // EUR/TL varsayılan kur (haftalık TCMB — dummy)
 export const eurTry = 47.5;
-
-/** Aylık nakit akışı (EUR karşılığı, dummy). */
-export const monthlyFlow: MonthlyFlow[] = [
-  { month: "Şub 26", income: 88000, expense: 132000 },
-  { month: "Mar 26", income: 305000, expense: 210000 },
-  { month: "Nis 26", income: 142000, expense: 168000 },
-  { month: "May 26", income: 118000, expense: 205000 },
-  { month: "Haz 26", income: 372000, expense: 240000 },
-  { month: "Tem 26", income: 268000, expense: 155000 },
-  { month: "Ağu 26", income: 934000, expense: 380000 },
-  { month: "Eyl 26", income: 214000, expense: 176000 },
-  { month: "Eki 26", income: 468000, expense: 322000 },
-  { month: "Kas 26", income: 236000, expense: 148000 },
-  { month: "Ara 26", income: 152000, expense: 210000 },
-  { month: "Oca 27", income: 340000, expense: 168000 },
-];
 
 export const fixedExpenses = reactive<FixedExpense[]>([
   { name: "Maaş / Tazminat", amount: 4200000, currency: "TL", dayOfMonth: 5 },

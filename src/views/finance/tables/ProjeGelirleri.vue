@@ -92,7 +92,8 @@ import InputIcon from "primevue/inputicon";
 import { useToast } from "primevue/usetoast";
 import { financeProjects } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
-import { fmtMoney, weeksLeft, milestoneAmount, MILESTONE_STATUS, type Milestone, type MilestoneStatus } from "@/finance/types";
+import { fmtMoney, weeksLeft, MILESTONE_STATUS, type Milestone, type MilestoneStatus } from "@/finance/types";
+import { milestoneAmount, projectOptions } from "@/finance/calc";
 import { MILESTONE_OPTIONS, STATUS_OPTIONS } from "@/finance/ui";
 
 const toast = useToast();
@@ -119,9 +120,7 @@ const rows = computed(() =>
   )
 );
 
-const projectOpts = computed(() =>
-  financeProjects.map((p) => ({ label: `${p.orderNo} · ${p.name} (${p.customer})`, value: p.id }))
-);
+const projectOpts = computed(() => projectOptions());
 
 const dialog = ref(false);
 const submitted = ref(false);

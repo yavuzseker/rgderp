@@ -17,7 +17,7 @@
     <div class="kpis">
       <div class="kpi">
         <span class="kpi-ic blue"><i class="pi pi-file-edit" /></span>
-        <div><b>{{ fmtMoney(totalContract) }}</b><span>Toplam Sözleşme</span></div>
+        <div><b>{{ fmtMoney(contract) }}</b><span>Toplam Sözleşme</span></div>
       </div>
       <div class="kpi">
         <span class="kpi-ic green"><i class="pi pi-check-circle" /></span>
@@ -107,15 +107,15 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
 import { financeProjects, eurTry, cash } from "@/data/financeMock";
-import { monthlyCashflow } from "@/finance/cashflow";
+import { fmtMoney, weeksLeft } from "@/finance/types";
 import {
-  fmtMoney,
-  projectRevenue,
-  projectCollected,
-  projectExpense,
-  weeksLeft,
-  type Currency,
-} from "@/finance/types";
+  totalContract,
+  totalCollected,
+  totalPending,
+  totalProjectExpense,
+  totalProjectProfit,
+  monthlyCashflow,
+} from "@/finance/calc";
 
 const cashDialog = ref(false);
 const cashForm = reactive({ tl: 0, eur: 0 });
@@ -130,19 +130,11 @@ function saveCash() {
   cashDialog.value = false;
 }
 
-const toEur = (n: number, cur: Currency) => (cur === "EUR" ? n : n / eurTry);
-
-const totalContract = computed(() =>
-  financeProjects.reduce((s, p) => s + toEur(projectRevenue(p), p.currency), 0)
-);
-const collected = computed(() =>
-  financeProjects.reduce((s, p) => s + toEur(projectCollected(p), p.currency), 0)
-);
-const pending = computed(() => totalContract.value - collected.value);
-const totalExpense = computed(() =>
-  financeProjects.reduce((s, p) => s + toEur(projectExpense(p), p.currency), 0)
-);
-const netProfit = computed(() => totalContract.value - totalExpense.value);
+const contract = computed(() => totalContract());
+const collected = computed(() => totalCollected());
+const pending = computed(() => totalPending());
+const totalExpense = computed(() => totalProjectExpense());
+const netProfit = computed(() => totalProjectProfit());
 
 const flow = computed(() => monthlyCashflow(12));
 const flowMax = computed(() => Math.max(1, ...flow.value.flatMap((m) => [m.income, m.expense])));

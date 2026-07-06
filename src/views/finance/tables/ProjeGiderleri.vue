@@ -74,6 +74,7 @@ import { useToast } from "primevue/usetoast";
 import { financeProjects } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
 import { fmtMoney, type ExpenseItem } from "@/finance/types";
+import { projectOptions } from "@/finance/calc";
 
 const toast = useToast();
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
@@ -95,9 +96,7 @@ const rows = computed(() =>
     }))
   )
 );
-const projectOpts = computed(() =>
-  financeProjects.map((p) => ({ label: `${p.orderNo} · ${p.name} (${p.customer})`, value: p.id }))
-);
+const projectOpts = computed(() => projectOptions());
 
 const dialog = ref(false);
 const submitted = ref(false);
