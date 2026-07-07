@@ -51,9 +51,22 @@
             <thead><tr><th>Vade</th><th class="r">Tutar</th><th></th></tr></thead>
             <tbody>
               <tr v-for="(t, i) in sorted(data)" :key="i">
-                <td>{{ fmtDate(t.date) }} <small class="wl" :class="{ over: weeksLeft(t.date).overdue }">· {{ weeksLeft(t.date).text }}</small></td>
-                <td class="r mono">{{ fmtMoney(t.amount, data.currency) }}</td>
-                <td class="r"><Button icon="pi pi-times" text rounded size="small" severity="danger" @click="delInst(data, t)" /></td>
+                <template v-if="editing === t">
+                  <td><DatePicker v-model="editDate" dateFormat="dd.mm.yy" showIcon /></td>
+                  <td class="r"><InputNumber v-model="editAmount" :min="0" /></td>
+                  <td class="r">
+                    <Button icon="pi pi-check" text rounded size="small" severity="success" @click="saveEdit(data, t)" v-tooltip.top="'Kaydet'" />
+                    <Button icon="pi pi-times" text rounded size="small" @click="editing = null" v-tooltip.top="'Vazgeç'" />
+                  </td>
+                </template>
+                <template v-else>
+                  <td>{{ fmtDate(t.date) }} <small class="wl" :class="{ over: weeksLeft(t.date).overdue }">· {{ weeksLeft(t.date).text }}</small></td>
+                  <td class="r mono">{{ fmtMoney(t.amount, data.currency) }}</td>
+                  <td class="r">
+                    <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" @click="startEdit(t)" v-tooltip.top="'Düzenle'" />
+                    <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="delInst(data, t)" v-tooltip.top="'Sil'" />
+                  </td>
+                </template>
               </tr>
               <tr v-if="!data.installments?.length"><td colspan="3" class="empty">Taksit yok. Yukarıdan ekleyin.</td></tr>
             </tbody>
@@ -131,6 +144,24 @@ function delInst(l: Loan, t: LoanInstallment) {
   const i = l.installments?.indexOf(t) ?? -1;
   if (i >= 0) l.installments!.splice(i, 1);
   sync(l);
+}
+
+// ---- Taksit düzenle (satır-içi) ----
+const editing = ref<LoanInstallment | null>(null);
+const editDate = ref<Date | null>(null);
+const editAmount = ref<number | null>(null);
+function startEdit(t: LoanInstallment) {
+  editing.value = t;
+  editDate.value = new Date(t.date);
+  editAmount.value = t.amount;
+}
+function saveEdit(l: Loan, t: LoanInstallment) {
+  if (!editDate.value || !editAmount.value) return;
+  t.date = editDate.value.toISOString().slice(0, 10);
+  t.amount = editAmount.value;
+  editing.value = null;
+  sync(l);
+  toast.add({ severity: "success", summary: "Taksit güncellendi", life: 1800 });
 }
 
 // ---- Kredi CRUD ----
