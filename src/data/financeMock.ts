@@ -7,7 +7,8 @@ import type {
   Milestone,
   MilestoneStatus,
   Currency,
-  FixedExpense,
+  FixedGroup,
+  FixedEntry,
   CashBalance,
 } from "@/finance/types";
 
@@ -149,19 +150,27 @@ export const financeProjects = reactive<FinanceProject[]>([
 // EUR/TL varsayılan kur (haftalık TCMB — dummy)
 export const eurTry = 47.5;
 
-// Sabit gider başlıkları (RGD). Tutarlar/ödeme günleri örnek — ekrandan düzenlenir. (dummy)
-export const fixedExpenses = reactive<FixedExpense[]>([
-  { name: "Maaş/Tazminat", amount: 4200000, currency: "TL", dayOfMonth: 5 },
-  { name: "SGK", amount: 980000, currency: "TL", dayOfMonth: 20 },
-  { name: "Stopaj", amount: 420000, currency: "TL", dayOfMonth: 26 },
-  { name: "KDV", amount: 1350000, currency: "TL", dayOfMonth: 26 },
-  { name: "Elektrik", amount: 480000, currency: "TL", dayOfMonth: 15 },
-  { name: "Su", amount: 42000, currency: "TL", dayOfMonth: 15 },
-  { name: "Cep Tel", amount: 25000, currency: "TL", dayOfMonth: 10 },
-  { name: "Telefon + İnternet", amount: 38000, currency: "TL", dayOfMonth: 10 },
-  { name: "Kredi K (GRNT + TEB + YAKIT)", amount: 350000, currency: "TL", dayOfMonth: 15 },
-  { name: "Kira", amount: 650000, currency: "TL", dayOfMonth: 1 },
-  { name: "CARİ ÖDEMELER", amount: 500000, currency: "TL", dayOfMonth: 20 },
+// Sabit gider kalemleri (RGD) — ana başlık + aylık tutarlar. Bu aydan itibaren
+// 6 ay dolduruldu; tutarı verilmeyen kalemler boş (ekrandan girilecek). (dummy)
+function months6(amount: number, day: number): FixedEntry[] {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, day);
+    return { date: d.toISOString().slice(0, 10), amount };
+  });
+}
+export const fixedGroups = reactive<FixedGroup[]>([
+  { id: finUid(), name: "Maaş/Tazminat", currency: "TL", entries: months6(2050000, 5) },
+  { id: finUid(), name: "SGK", currency: "TL", entries: [] },
+  { id: finUid(), name: "Stopaj", currency: "TL", entries: [] },
+  { id: finUid(), name: "KDV", currency: "TL", entries: [] },
+  { id: finUid(), name: "Elektrik", currency: "TL", entries: months6(50000, 15) },
+  { id: finUid(), name: "Su", currency: "TL", entries: months6(5000, 15) },
+  { id: finUid(), name: "Cep Tel", currency: "TL", entries: months6(6500, 10) },
+  { id: finUid(), name: "Telefon + İnternet", currency: "TL", entries: months6(3000, 10) },
+  { id: finUid(), name: "Kredi K (GRNT + TEB + YAKIT)", currency: "TL", entries: months6(400000, 15) },
+  { id: finUid(), name: "Kira", currency: "TL", entries: months6(187000, 1) },
+  { id: finUid(), name: "CARİ ÖDEMELER", currency: "TL", entries: [] },
 ]);
 
 // NOT: Krediler artık Firestore'da (src/data/financeStore.ts).

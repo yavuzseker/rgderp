@@ -62,12 +62,17 @@ export interface CashBalance {
 }
 
 // ---- Şirket geneli yükümlülükler ----
-export interface FixedExpense {
-  id?: string; // Firestore doküman id'si
-  name: string;
+/** Bir sabit gider kaleminin tek aylık kaydı. */
+export interface FixedEntry {
+  date: string; // ISO — o ayki ödeme
   amount: number;
+}
+/** Sabit gider kalemi (ana başlık) — aylık tutarlar altında (kredi ↔ taksit gibi). */
+export interface FixedGroup {
+  id?: string;
+  name: string;
   currency: Currency;
-  dayOfMonth: number;
+  entries: FixedEntry[];
 }
 export interface LoanInstallment {
   date: string; // ISO — taksit vadesi

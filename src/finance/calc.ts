@@ -2,7 +2,7 @@
 // Veri kaynağı tek yerden gelir (şimdi financeMock, Firestore'a geçince
 // financeStore olacak — sadece aşağıdaki import satırı değişir).
 // Ekranlar bu fonksiyonları computed() içinde çağırır → computed = cache.
-import { financeProjects, fixedExpenses, cash, eurTry } from "@/data/financeMock";
+import { financeProjects, fixedGroups, cash, eurTry } from "@/data/financeMock";
 import { loans, checkGroups } from "@/data/financeStore"; // krediler + çekler Firestore'da
 import type { Currency, FinanceProject } from "./types";
 
@@ -90,9 +90,13 @@ export function monthlyCashflow(months = 12): CashRow[] {
     }
   }
 
-  // Sabit giderler her ay tekrar eder
-  const fixedMonthly = fixedExpenses.reduce((s, f) => s + toEur(f.amount, f.currency), 0);
-  for (const b of buckets) b.expense += fixedMonthly;
+  // Sabit giderler — her kalemin o ayki kaydı ilgili aya yazılır
+  for (const g of fixedGroups) {
+    for (const e of g.entries) {
+      const i = idxOf(e.date);
+      if (i >= 0) buckets[i].expense += toEur(e.amount, g.currency);
+    }
+  }
 
   // Krediler: taksit takvimi varsa her taksit kendi ayına yazılır (doğru);
   // yoksa (elle eklenen kredi) aylık taksit kadar, kalan bitene dek dağıtılır.
