@@ -101,7 +101,7 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import { useToast } from "primevue/usetoast";
-import { fixedGroups, finUid } from "@/data/financeMock";
+import { fixedGroups, saveFixedGroup, deleteFixedGroup } from "@/data/financeStore";
 import { fmtMoney, type FixedGroup, type FixedEntry } from "@/finance/types";
 import { CUR } from "@/finance/ui";
 
@@ -122,6 +122,7 @@ function addEntry(g: FixedGroup) {
   if (!newDate.value || !newAmount.value) return;
   g.entries.push({ date: monthISO(newDate.value), amount: newAmount.value });
   resort(g);
+  saveFixedGroup(g);
   newDate.value = null;
   newAmount.value = null;
   toast.add({ severity: "success", summary: "Eklendi", life: 1600 });
@@ -129,6 +130,7 @@ function addEntry(g: FixedGroup) {
 function delEntry(g: FixedGroup, e: FixedEntry) {
   const i = g.entries.indexOf(e);
   if (i >= 0) g.entries.splice(i, 1);
+  saveFixedGroup(g);
 }
 /** Seçilen aydan itibaren 6 ayı aynı tutarla doldurur (varsa o ayı günceller). */
 function copy6(g: FixedGroup) {
@@ -142,6 +144,7 @@ function copy6(g: FixedGroup) {
     else g.entries.push({ date: iso, amount: newAmount.value });
   }
   resort(g);
+  saveFixedGroup(g);
   newDate.value = null;
   newAmount.value = null;
   toast.add({ severity: "success", summary: "6 ay dolduruldu", life: 1800 });
@@ -162,6 +165,7 @@ function saveEdit(g: FixedGroup, e: FixedEntry) {
   e.amount = editAmount.value;
   editing.value = null;
   resort(g);
+  saveFixedGroup(g);
   toast.add({ severity: "success", summary: "Güncellendi", life: 1600 });
 }
 
@@ -189,16 +193,16 @@ function save() {
   if (!form.name.trim()) return;
   if (editTarget.value) {
     Object.assign(editTarget.value, { name: form.name, currency: form.currency });
+    saveFixedGroup(editTarget.value);
     toast.add({ severity: "success", summary: "Güncellendi", detail: form.name, life: 2000 });
   } else {
-    fixedGroups.push({ id: finUid(), name: form.name, currency: form.currency, entries: [] });
+    saveFixedGroup({ name: form.name, currency: form.currency, entries: [] });
     toast.add({ severity: "success", summary: "Kalem eklendi", detail: form.name, life: 2000 });
   }
   dialog.value = false;
 }
 function removeGroup(g: FixedGroup) {
-  const i = fixedGroups.indexOf(g);
-  if (i >= 0) fixedGroups.splice(i, 1);
+  if (g.id) deleteFixedGroup(g.id);
 }
 </script>
 

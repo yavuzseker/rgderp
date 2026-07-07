@@ -4,7 +4,7 @@
 import { reactive } from "vue";
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { firestore } from "@/firebase";
-import type { Loan, CheckGroup } from "@/finance/types";
+import type { Loan, CheckGroup, FixedGroup } from "@/finance/types";
 
 export const finUid = () => Math.random().toString(36).slice(2, 10);
 
@@ -12,6 +12,8 @@ export const finUid = () => Math.random().toString(36).slice(2, 10);
 export const loans = reactive<Loan[]>([]);
 /** Çek grupları (firma bazında) — Firestore ile senkron. */
 export const checkGroups = reactive<CheckGroup[]>([]);
+/** Sabit gider kalemleri — Firestore ile senkron. */
+export const fixedGroups = reactive<FixedGroup[]>([]);
 
 function bind<T>(name: string, target: T[]) {
   onSnapshot(collection(firestore, name), (snap) => {
@@ -25,6 +27,7 @@ export function startFinanceListeners() {
   started = true;
   bind("loans", loans);
   bind("checkGroups", checkGroups);
+  bind("fixedGroups", fixedGroups);
 }
 
 export async function saveLoan(l: Loan) {
@@ -46,4 +49,14 @@ export async function saveCheckGroup(g: CheckGroup) {
 }
 export async function deleteCheckGroup(id: string) {
   await deleteDoc(doc(firestore, "checkGroups", id));
+}
+
+export async function saveFixedGroup(g: FixedGroup) {
+  const id = g.id || finUid();
+  const data: FixedGroup = { ...g, id };
+  if (!data.entries) data.entries = [];
+  await setDoc(doc(firestore, "fixedGroups", id), data);
+}
+export async function deleteFixedGroup(id: string) {
+  await deleteDoc(doc(firestore, "fixedGroups", id));
 }

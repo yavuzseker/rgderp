@@ -7,8 +7,6 @@ import type {
   Milestone,
   MilestoneStatus,
   Currency,
-  FixedGroup,
-  FixedEntry,
   CashBalance,
 } from "@/finance/types";
 
@@ -150,28 +148,7 @@ export const financeProjects = reactive<FinanceProject[]>([
 // EUR/TL varsayılan kur (haftalık TCMB — dummy)
 export const eurTry = 47.5;
 
-// Sabit gider kalemleri (RGD) — ana başlık + aylık tutarlar. Bu aydan itibaren
-// 6 ay dolduruldu; tutarı verilmeyen kalemler boş (ekrandan girilecek). (dummy)
-function months6(amount: number, day: number): FixedEntry[] {
-  const now = new Date();
-  return Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, day);
-    return { date: d.toISOString().slice(0, 10), amount };
-  });
-}
-export const fixedGroups = reactive<FixedGroup[]>([
-  { id: finUid(), name: "Maaş/Tazminat", currency: "TL", entries: months6(2050000, 5) },
-  { id: finUid(), name: "SGK", currency: "TL", entries: [] },
-  { id: finUid(), name: "Stopaj", currency: "TL", entries: [] },
-  { id: finUid(), name: "KDV", currency: "TL", entries: [] },
-  { id: finUid(), name: "Elektrik", currency: "TL", entries: months6(50000, 15) },
-  { id: finUid(), name: "Su", currency: "TL", entries: months6(5000, 15) },
-  { id: finUid(), name: "Cep Tel", currency: "TL", entries: months6(6500, 10) },
-  { id: finUid(), name: "Telefon + İnternet", currency: "TL", entries: months6(3000, 10) },
-  { id: finUid(), name: "Kredi K (GRNT + TEB + YAKIT)", currency: "TL", entries: months6(400000, 15) },
-  { id: finUid(), name: "Kira", currency: "TL", entries: months6(187000, 1) },
-  { id: finUid(), name: "CARİ ÖDEMELER", currency: "TL", entries: [] },
-]);
+// NOT: Sabit giderler artık Firestore'da (fixedGroups — src/data/financeStore.ts).
 
 // NOT: Krediler artık Firestore'da (src/data/financeStore.ts).
 
