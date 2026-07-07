@@ -149,15 +149,19 @@ export const financeProjects = reactive<FinanceProject[]>([
 // EUR/TL varsayılan kur (haftalık TCMB — dummy)
 export const eurTry = 47.5;
 
+// Sabit gider başlıkları (RGD). Tutarlar/ödeme günleri örnek — ekrandan düzenlenir. (dummy)
 export const fixedExpenses = reactive<FixedExpense[]>([
-  { name: "Maaş / Tazminat", amount: 4200000, currency: "TL", dayOfMonth: 5 },
+  { name: "Maaş/Tazminat", amount: 4200000, currency: "TL", dayOfMonth: 5 },
   { name: "SGK", amount: 980000, currency: "TL", dayOfMonth: 20 },
   { name: "Stopaj", amount: 420000, currency: "TL", dayOfMonth: 26 },
   { name: "KDV", amount: 1350000, currency: "TL", dayOfMonth: 26 },
-  { name: "Kira", amount: 650000, currency: "TL", dayOfMonth: 1 },
   { name: "Elektrik", amount: 480000, currency: "TL", dayOfMonth: 15 },
   { name: "Su", amount: 42000, currency: "TL", dayOfMonth: 15 },
+  { name: "Cep Tel", amount: 25000, currency: "TL", dayOfMonth: 10 },
   { name: "Telefon + İnternet", amount: 38000, currency: "TL", dayOfMonth: 10 },
+  { name: "Kredi K (GRNT + TEB + YAKIT)", amount: 350000, currency: "TL", dayOfMonth: 15 },
+  { name: "Kira", amount: 650000, currency: "TL", dayOfMonth: 1 },
+  { name: "CARİ ÖDEMELER", amount: 500000, currency: "TL", dayOfMonth: 20 },
 ]);
 
 // NOT: Krediler artık Firestore'da (src/data/financeStore.ts).

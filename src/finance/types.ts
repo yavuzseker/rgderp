@@ -63,6 +63,7 @@ export interface CashBalance {
 
 // ---- Şirket geneli yükümlülükler ----
 export interface FixedExpense {
+  id?: string; // Firestore doküman id'si
   name: string;
   amount: number;
   currency: Currency;
