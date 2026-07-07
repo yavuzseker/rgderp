@@ -12,7 +12,9 @@ import "primeicons/primeicons.css";
 import "./style.css";
 
 import { startListeners } from "./data/store";
+import { startFinanceListeners } from "./data/financeStore";
 startListeners();
+startFinanceListeners();
 
 const app = createApp(App);
 

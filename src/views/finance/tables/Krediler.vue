@@ -1,6 +1,6 @@
 <template>
   <div class="fpage">
-    <DataTable :value="loans" dataKey="name" v-model:expandedRows="expandedRows"
+    <DataTable :value="loans" dataKey="id" v-model:expandedRows="expandedRows"
       paginator :rows="10" removableSort class="card-table">
       <template #header>
         <div class="fh">
@@ -28,10 +28,10 @@
         </template>
       </Column>
       <Column header="" style="width: 110px">
-        <template #body="{ data, index }">
+        <template #body="{ data }">
           <div class="row-actions">
             <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
-            <Button icon="pi pi-trash" text rounded severity="danger" @click="loans.splice(index, 1)" v-tooltip.top="'Sil'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="deleteLoan(data.id)" v-tooltip.top="'Sil'" />
           </div>
         </template>
       </Column>
@@ -109,7 +109,7 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import { useToast } from "primevue/usetoast";
-import { loans } from "@/data/financeMock";
+import { loans, saveLoan, deleteLoan } from "@/data/financeStore";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, type Loan, type LoanInstallment } from "@/finance/types";
 import { CUR } from "@/finance/ui";
@@ -127,6 +127,7 @@ function sync(l: Loan) {
   l.installments.sort((a, b) => (a.date < b.date ? -1 : 1));
   l.remaining = l.installments.reduce((s, t) => s + t.amount, 0);
   l.monthlyInstallment = l.installments[0]?.amount ?? 0;
+  saveLoan(l); // kalıcı: Firestore
 }
 
 const newDate = ref<Date | null>(null);
@@ -188,9 +189,10 @@ function save() {
   if (!form.name.trim() || !form.remaining) return;
   if (editTarget.value) {
     Object.assign(editTarget.value, { name: form.name, bank: form.bank, remaining: form.remaining, currency: form.currency, monthlyInstallment: form.monthlyInstallment });
+    saveLoan(editTarget.value);
     toast.add({ severity: "success", summary: "Güncellendi", detail: form.name, life: 2200 });
   } else {
-    loans.push({ ...form });
+    saveLoan({ ...form });
     toast.add({ severity: "success", summary: "Eklendi", detail: form.name, life: 2200 });
   }
   dialog.value = false;

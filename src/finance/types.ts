@@ -73,6 +73,7 @@ export interface LoanInstallment {
   amount: number;
 }
 export interface Loan {
+  id?: string; // Firestore doküman id'si
   name: string;
   bank: string;
   remaining: number;

@@ -8,7 +8,6 @@ import type {
   MilestoneStatus,
   Currency,
   FixedExpense,
-  Loan,
   CheckItem,
   CashBalance,
 } from "@/finance/types";
@@ -162,16 +161,7 @@ export const fixedExpenses = reactive<FixedExpense[]>([
   { name: "Telefon + İnternet", amount: 38000, currency: "TL", dayOfMonth: 10 },
 ]);
 
-// Krediler — RGD kredi ödemeleri Excel'inden türetildi. Yalnızca ödenmemiş,
-// vadesi gelecekteki taksitler; kimi EUR kimi TL. (dummy)
-export const loans = reactive<Loan[]>([
-  { name: "Türkiye Finans Leasing", bank: "Türkiye Finans", currency: "TL", remaining: 1910908, monthlyInstallment: 477727, installments: [{ date: "2026-07-27", amount: 477727 }, { date: "2026-08-26", amount: 477727 }, { date: "2026-09-28", amount: 477727 }, { date: "2026-10-26", amount: 477727 }] },
-  { name: "ING Rotatif Kredi", bank: "ING", currency: "TL", remaining: 100000, monthlyInstallment: 100000, installments: [{ date: "2026-08-13", amount: 100000 }] },
-  { name: "Yapı Kredi Eximbank 10M", bank: "Eximbank", currency: "TL", remaining: 3333334, monthlyInstallment: 1666667, installments: [{ date: "2026-08-24", amount: 1666667 }, { date: "2026-11-19", amount: 1666667 }] },
-  { name: "Türkiye Finans 300.000 €", bank: "Türkiye Finans", currency: "EUR", remaining: 317490, monthlyInstallment: 317490, installments: [{ date: "2026-09-23", amount: 317490 }] },
-  { name: "Yapı Kredi 5M Spot", bank: "Yapı Kredi", currency: "TL", remaining: 3014014, monthlyInstallment: 430478, installments: [{ date: "2026-07-14", amount: 430478 }, { date: "2026-08-14", amount: 430478 }, { date: "2026-09-14", amount: 430478 }, { date: "2026-10-14", amount: 430478 }, { date: "2026-11-16", amount: 430478 }, { date: "2026-12-14", amount: 430478 }, { date: "2027-01-14", amount: 431146 }] },
-  { name: "Garanti 200.000 €", bank: "Garanti", currency: "EUR", remaining: 68784, monthlyInstallment: 17196, installments: [{ date: "2026-07-14", amount: 17196 }, { date: "2026-08-14", amount: 17196 }, { date: "2026-09-14", amount: 17196 }, { date: "2026-10-14", amount: 17196 }] },
-]);
+// NOT: Krediler artık Firestore'da (src/data/financeStore.ts).
 
 export const checks = reactive<CheckItem[]>([
   { firma: "Küresel Hırdavat", bank: "Halkbank", amount: 193000, currency: "TL", dueDate: "2026-07-10" },
