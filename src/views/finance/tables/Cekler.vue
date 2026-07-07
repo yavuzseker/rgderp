@@ -1,49 +1,85 @@
 <template>
   <div class="fpage">
-    <DataTable :value="checks" dataKey="firma" paginator :rows="10" removableSort class="card-table"
-      sortField="dueDate" :sortOrder="1">
+    <DataTable :value="checkGroups" dataKey="id" v-model:expandedRows="expandedRows"
+      paginator :rows="10" removableSort class="card-table" sortField="firma" :sortOrder="1">
       <template #header>
         <div class="fh">
-          <div><h3>Ödenecek Çekler</h3><p>Cari & çek ödemeleri</p></div>
-          <Button label="Yeni Çek" icon="pi pi-plus" @click="openNew" />
+          <div><h3>Ödenecek Çekler</h3><p>Firma bazında — satıra basınca çekler açılır</p></div>
+          <Button label="Yeni Firma" icon="pi pi-plus" @click="openNew" />
         </div>
       </template>
       <template #empty><div class="empty">Kayıt yok.</div></template>
 
+      <Column expander style="width: 3rem" />
       <Column field="firma" header="Firma" sortable />
-      <Column field="bank" header="Banka" sortable>
-        <template #body="{ data }"><span class="cat">{{ data.bank }}</span></template>
-      </Column>
-      <Column field="amount" header="Tutar" sortable style="width: 170px">
-        <template #body="{ data }"><span class="mono">{{ fmtMoney(data.amount, data.currency) }}</span></template>
-      </Column>
-      <Column field="dueDate" header="Vade" sortable style="width: 200px">
+      <Column header="Çek" style="width: 200px">
         <template #body="{ data }">
-          {{ fmtDate(data.dueDate) }}
-          <small class="wl" :class="{ over: weeksLeft(data.dueDate).overdue }">· {{ weeksLeft(data.dueDate).text }}</small>
+          <b>{{ data.checks.length }}</b> çek
+          <small v-if="data.checks.length" class="sub">· sonraki {{ fmtDate(sorted(data)[0].date) }}</small>
         </template>
       </Column>
+      <Column header="Toplam" style="width: 180px">
+        <template #body="{ data }"><span class="mono">{{ fmtMoney(totalOf(data), data.currency) }}</span></template>
+      </Column>
       <Column header="" style="width: 110px">
-        <template #body="{ data, index }">
+        <template #body="{ data }">
           <div class="row-actions">
             <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
-            <Button icon="pi pi-trash" text rounded severity="danger" @click="checks.splice(index, 1)" v-tooltip.top="'Sil'" />
+            <Button icon="pi pi-trash" text rounded severity="danger" @click="removeGroup(data)" v-tooltip.top="'Sil'" />
           </div>
         </template>
       </Column>
+
+      <!-- Alt detay: firmanın çekleri -->
+      <template #expansion="{ data }">
+        <div class="inst">
+          <div class="inst-head">
+            <span><i class="pi pi-money-bill" /> {{ data.firma }} Çekleri <small>({{ data.currency }})</small></span>
+            <div class="inst-add">
+              <DatePicker v-model="newDate" dateFormat="dd.mm.yy" placeholder="Vade" showIcon />
+              <InputNumber v-model="newAmount" :min="0" placeholder="Tutar" />
+              <Button icon="pi pi-plus" label="Ekle" size="small" @click="addCheck(data)" />
+            </div>
+          </div>
+          <table class="inst-table">
+            <thead><tr><th>Vade</th><th class="r">Tutar</th><th></th></tr></thead>
+            <tbody>
+              <tr v-for="(c, i) in sorted(data)" :key="i">
+                <template v-if="editing === c">
+                  <td><DatePicker v-model="editDate" dateFormat="dd.mm.yy" showIcon /></td>
+                  <td class="r"><InputNumber v-model="editAmount" :min="0" /></td>
+                  <td class="r">
+                    <Button icon="pi pi-check" text rounded size="small" severity="success" @click="saveEdit(data, c)" v-tooltip.top="'Kaydet'" />
+                    <Button icon="pi pi-times" text rounded size="small" @click="editing = null" v-tooltip.top="'Vazgeç'" />
+                  </td>
+                </template>
+                <template v-else>
+                  <td>{{ fmtDate(c.date) }} <small class="wl" :class="{ over: weeksLeft(c.date).overdue }">· {{ weeksLeft(c.date).text }}</small></td>
+                  <td class="r mono">{{ fmtMoney(c.amount, data.currency) }}</td>
+                  <td class="r">
+                    <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" @click="startEdit(c)" v-tooltip.top="'Düzenle'" />
+                    <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="delCheck(data, c)" v-tooltip.top="'Sil'" />
+                  </td>
+                </template>
+              </tr>
+              <tr v-if="!data.checks.length"><td colspan="3" class="empty">Çek yok. Yukarıdan ekleyin.</td></tr>
+            </tbody>
+            <tfoot v-if="data.checks.length">
+              <tr><td>Toplam ({{ data.checks.length }} çek)</td><td class="r mono"><b>{{ fmtMoney(totalOf(data), data.currency) }}</b></td><td></td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </template>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" :header="editTarget ? 'Çek Düzenle' : 'Yeni Çek'" modal :style="{ width: '480px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Firma Düzenle' : 'Yeni Firma'" modal :style="{ width: '440px' }">
       <div class="form">
+        <div class="field"><label>Firma Adı *</label><InputText v-model="form.firma" autofocus :invalid="submitted && !form.firma" placeholder="Örn: TKS Kalıp" /></div>
         <div class="two">
-          <div class="field"><label>Firma *</label><InputText v-model="form.firma" autofocus :invalid="submitted && !form.firma" placeholder="Örn: Küresel Hırdavat" /></div>
           <div class="field"><label>Banka</label><InputText v-model="form.bank" placeholder="Örn: Halkbank" /></div>
-        </div>
-        <div class="two">
-          <div class="field"><label>Tutar *</label><InputNumber v-model="form.amount" :min="0" :invalid="submitted && !form.amount" fluid /></div>
           <div class="field"><label>Para</label><Select v-model="form.currency" :options="CUR" optionLabel="label" optionValue="value" fluid /></div>
         </div>
-        <div class="field"><label>Vade Tarihi *</label><DatePicker v-model="dueDate" dateFormat="dd.mm.yy" :invalid="submitted && !dueDate" showIcon fluid /></div>
+        <p class="hint">Firmayı ekledikten sonra satırı açıp çekleri ekleyebilirsin.</p>
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
@@ -64,50 +100,110 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import { useToast } from "primevue/usetoast";
-import { checks } from "@/data/financeMock";
+import { checkGroups, finUid } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
-import { fmtMoney, weeksLeft, type CheckItem } from "@/finance/types";
+import { fmtMoney, weeksLeft, type CheckGroup, type CheckEntry } from "@/finance/types";
 import { CUR } from "@/finance/ui";
 
 const toast = useToast();
+const expandedRows = ref<CheckGroup[]>([]);
+
+const totalOf = (g: CheckGroup) => g.checks.reduce((s, c) => s + c.amount, 0);
+const sorted = (g: CheckGroup) => [...g.checks].sort((a, b) => (a.date < b.date ? -1 : 1));
+const resort = (g: CheckGroup) => g.checks.sort((a, b) => (a.date < b.date ? -1 : 1));
+
+// ---- Çek ekle/sil ----
+const newDate = ref<Date | null>(null);
+const newAmount = ref<number | null>(null);
+function addCheck(g: CheckGroup) {
+  if (!newDate.value || !newAmount.value) return;
+  g.checks.push({ date: newDate.value.toISOString().slice(0, 10), amount: newAmount.value });
+  resort(g);
+  newDate.value = null;
+  newAmount.value = null;
+  toast.add({ severity: "success", summary: "Çek eklendi", life: 1800 });
+}
+function delCheck(g: CheckGroup, c: CheckEntry) {
+  const i = g.checks.indexOf(c);
+  if (i >= 0) g.checks.splice(i, 1);
+}
+
+// ---- Çek düzenle (satır-içi) ----
+const editing = ref<CheckEntry | null>(null);
+const editDate = ref<Date | null>(null);
+const editAmount = ref<number | null>(null);
+function startEdit(c: CheckEntry) {
+  editing.value = c;
+  editDate.value = new Date(c.date);
+  editAmount.value = c.amount;
+}
+function saveEdit(g: CheckGroup, c: CheckEntry) {
+  if (!editDate.value || !editAmount.value) return;
+  c.date = editDate.value.toISOString().slice(0, 10);
+  c.amount = editAmount.value;
+  editing.value = null;
+  resort(g);
+  toast.add({ severity: "success", summary: "Çek güncellendi", life: 1800 });
+}
+
+// ---- Firma CRUD ----
 const dialog = ref(false);
 const submitted = ref(false);
-const dueDate = ref<Date | null>(null);
-const editTarget = ref<CheckItem | null>(null);
-const empty = (): CheckItem => ({ firma: "", bank: "", amount: 0, currency: "TL", dueDate: "" });
-const form = reactive<CheckItem>(empty());
+const editTarget = ref<CheckGroup | null>(null);
+const empty = (): CheckGroup => ({ firma: "", bank: "", currency: "TL", checks: [] });
+const form = reactive<CheckGroup>(empty());
 
 function openNew() {
   Object.assign(form, empty());
-  dueDate.value = null;
   editTarget.value = null;
   submitted.value = false;
   dialog.value = true;
 }
-function openEdit(item: CheckItem) {
-  Object.assign(form, item);
-  dueDate.value = item.dueDate ? new Date(item.dueDate) : null;
-  editTarget.value = item;
+function openEdit(g: CheckGroup) {
+  Object.assign(form, { firma: g.firma, bank: g.bank, currency: g.currency, checks: g.checks });
+  editTarget.value = g;
   submitted.value = false;
   dialog.value = true;
 }
 function save() {
   submitted.value = true;
-  if (!form.firma.trim() || !form.amount || !dueDate.value) return;
-  const payload = { ...form, dueDate: dueDate.value.toISOString() };
+  if (!form.firma.trim()) return;
   if (editTarget.value) {
-    Object.assign(editTarget.value, payload);
-    toast.add({ severity: "success", summary: "Güncellendi", detail: form.firma, life: 2200 });
+    Object.assign(editTarget.value, { firma: form.firma, bank: form.bank, currency: form.currency });
+    toast.add({ severity: "success", summary: "Güncellendi", detail: form.firma, life: 2000 });
   } else {
-    checks.push(payload);
-    toast.add({ severity: "success", summary: "Eklendi", detail: form.firma, life: 2200 });
+    checkGroups.push({ id: finUid(), firma: form.firma, bank: form.bank, currency: form.currency, checks: [] });
+    toast.add({ severity: "success", summary: "Firma eklendi", detail: form.firma, life: 2000 });
   }
   dialog.value = false;
+}
+function removeGroup(g: CheckGroup) {
+  const i = checkGroups.indexOf(g);
+  if (i >= 0) checkGroups.splice(i, 1);
 }
 </script>
 
 <style scoped>
 @import "@/views/finance/tables/ftable.css";
+.sub { color: #94a3b8; }
+.hint { font-size: 12px; color: #94a3b8; margin: 2px 0 0; }
+
+.inst { padding: 6px 8px 10px; }
+.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.inst-head i { color: #1488c8; }
+.inst-head small { color: #94a3b8; font-weight: 500; }
+.inst-add { display: flex; align-items: center; gap: 8px; }
+.inst-add :deep(.p-inputnumber-input), .inst-add :deep(.p-datepicker-input) { width: 130px; }
+
+.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
+.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
+.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
+.inst-table tbody tr:last-child td { border-bottom: none; }
+.inst-table .r { text-align: right; }
+.inst-table .mono { font-variant-numeric: tabular-nums; }
+.inst-table tfoot td { padding: 8px 12px; border-top: 2px solid #eef2f7; color: #0f172a; }
 .wl { color: #94a3b8; font-weight: 600; }
 .wl.over { color: #ef4444; }
+.empty { text-align: center; color: #94a3b8; padding: 14px; }
 </style>

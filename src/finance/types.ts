@@ -82,12 +82,18 @@ export interface Loan {
   /** Gelecek taksitler (tarih+tutar). Varsa nakit akışı bunları kullanır. */
   installments?: LoanInstallment[];
 }
-export interface CheckItem {
-  firma: string;
-  bank: string;
+/** Tek bir çek (vade + tutar) — firma grubu içinde yer alır. */
+export interface CheckEntry {
+  date: string; // ISO — vade
   amount: number;
+}
+/** Firma bazında çek grubu (kredi ↔ taksit mantığının aynısı). */
+export interface CheckGroup {
+  id?: string; // Firestore doküman id'si
+  firma: string;
+  bank?: string;
   currency: Currency;
-  dueDate: string; // ISO
+  checks: CheckEntry[];
 }
 
 // ---- Biçimlendirme yardımcıları ----

@@ -17,19 +17,16 @@ export function startFinanceListeners() {
   if (started) return;
   started = true;
   onSnapshot(collection(firestore, "loans"), (snap) => {
-    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Loan));
-    loans.splice(0, loans.length, ...rows);
+    loans.splice(0, loans.length, ...snap.docs.map((d) => ({ id: d.id, ...d.data() } as Loan)));
   });
 }
 
 export async function saveLoan(l: Loan) {
   const id = l.id || finUid();
   const data: Loan = { ...l, id };
-  // undefined alanları Firestore kabul etmez; installments yoksa boş dizi
   if (!data.installments) data.installments = [];
   await setDoc(doc(firestore, "loans", id), data);
 }
-
 export async function deleteLoan(id: string) {
   await deleteDoc(doc(firestore, "loans", id));
 }
