@@ -42,6 +42,7 @@
               <DatePicker v-model="newDate" view="month" dateFormat="mm/yy" placeholder="Ay" showIcon />
               <InputNumber v-model="newAmount" :min="0" placeholder="Tutar" />
               <Button icon="pi pi-plus" label="Ekle" size="small" @click="addEntry(data)" />
+              <Button icon="pi pi-copy" label="6 Aya Kopyala" size="small" severity="secondary" outlined @click="copy6(data)" v-tooltip.top="'Seçilen aydan itibaren 6 ay bu tutarla doldurulur'" />
             </div>
           </div>
           <table class="inst-table">
@@ -128,6 +129,22 @@ function addEntry(g: FixedGroup) {
 function delEntry(g: FixedGroup, e: FixedEntry) {
   const i = g.entries.indexOf(e);
   if (i >= 0) g.entries.splice(i, 1);
+}
+/** Seçilen aydan itibaren 6 ayı aynı tutarla doldurur (varsa o ayı günceller). */
+function copy6(g: FixedGroup) {
+  if (!newDate.value || !newAmount.value) return;
+  const start = new Date(newDate.value.getFullYear(), newDate.value.getMonth(), 1);
+  for (let i = 0; i < 6; i++) {
+    const iso = new Date(start.getFullYear(), start.getMonth() + i, 5).toISOString().slice(0, 10);
+    const ym = iso.slice(0, 7);
+    const existing = g.entries.find((e) => e.date.slice(0, 7) === ym);
+    if (existing) existing.amount = newAmount.value;
+    else g.entries.push({ date: iso, amount: newAmount.value });
+  }
+  resort(g);
+  newDate.value = null;
+  newAmount.value = null;
+  toast.add({ severity: "success", summary: "6 ay dolduruldu", life: 1800 });
 }
 
 // ---- Aylık tutar düzenle ----
