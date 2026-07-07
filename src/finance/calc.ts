@@ -2,8 +2,8 @@
 // Veri kaynağı tek yerden gelir (şimdi financeMock, Firestore'a geçince
 // financeStore olacak — sadece aşağıdaki import satırı değişir).
 // Ekranlar bu fonksiyonları computed() içinde çağırır → computed = cache.
-import { financeProjects, fixedExpenses, checkGroups, cash, eurTry } from "@/data/financeMock";
-import { loans } from "@/data/financeStore"; // krediler Firestore'da (çekler şimdilik mock)
+import { financeProjects, fixedExpenses, cash, eurTry } from "@/data/financeMock";
+import { loans, checkGroups } from "@/data/financeStore"; // krediler + çekler Firestore'da
 import type { Currency, FinanceProject } from "./types";
 
 // ---- Kur ----

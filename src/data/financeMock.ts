@@ -9,7 +9,6 @@ import type {
   Currency,
   FixedExpense,
   CashBalance,
-  CheckGroup,
 } from "@/finance/types";
 
 // Bugün kasada olan bakiye (TL + EUR ayrı) — düzenlenebilir.
@@ -163,23 +162,4 @@ export const fixedExpenses = reactive<FixedExpense[]>([
 
 // NOT: Krediler artık Firestore'da (src/data/financeStore.ts).
 
-// Çekler — firma bazında gruplu (dummy). Beğenilirse Firestore'a taşınacak.
-export const checkGroups = reactive<CheckGroup[]>([
-  { id: finUid(), firma: "HİDROSEL", currency: "TL", checks: [
-    { date: "2026-07-20", amount: 181000 }, { date: "2026-08-10", amount: 25900 } ] },
-  { id: finUid(), firma: "TKS KALIP", currency: "TL", checks: [
-    { date: "2026-07-20", amount: 700000 }, { date: "2026-08-03", amount: 60000 },
-    { date: "2026-08-10", amount: 60000 }, { date: "2026-09-21", amount: 50000 },
-    { date: "2026-09-21", amount: 50000 } ] },
-  { id: finUid(), firma: "ENTEK GLOBAL", currency: "TL", checks: [
-    { date: "2026-07-27", amount: 675000 }, { date: "2026-08-24", amount: 102500 } ] },
-  { id: finUid(), firma: "DENKEN MAKİNE", currency: "TL", checks: [
-    { date: "2026-08-17", amount: 965500 }, { date: "2026-09-28", amount: 561000 } ] },
-  { id: finUid(), firma: "KÖRÜSTAN", currency: "TL", checks: [
-    { date: "2026-08-24", amount: 233744 } ] },
-  { id: finUid(), firma: "3M TEKNİK", currency: "TL", checks: [
-    { date: "2026-09-07", amount: 170000 }, { date: "2026-09-14", amount: 250000 },
-    { date: "2026-10-05", amount: 360000 } ] },
-  { id: finUid(), firma: "KÜRESEL HIRDAVAT", currency: "TL", checks: [
-    { date: "2026-09-21", amount: 521300 } ] },
-]);
+// NOT: Çekler artık Firestore'da (checkGroups — src/data/financeStore.ts).

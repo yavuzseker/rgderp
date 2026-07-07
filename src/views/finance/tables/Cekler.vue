@@ -100,7 +100,7 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import { useToast } from "primevue/usetoast";
-import { checkGroups, finUid } from "@/data/financeMock";
+import { checkGroups, saveCheckGroup, deleteCheckGroup } from "@/data/financeStore";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, type CheckGroup, type CheckEntry } from "@/finance/types";
 import { CUR } from "@/finance/ui";
@@ -119,6 +119,7 @@ function addCheck(g: CheckGroup) {
   if (!newDate.value || !newAmount.value) return;
   g.checks.push({ date: newDate.value.toISOString().slice(0, 10), amount: newAmount.value });
   resort(g);
+  saveCheckGroup(g);
   newDate.value = null;
   newAmount.value = null;
   toast.add({ severity: "success", summary: "Çek eklendi", life: 1800 });
@@ -126,6 +127,7 @@ function addCheck(g: CheckGroup) {
 function delCheck(g: CheckGroup, c: CheckEntry) {
   const i = g.checks.indexOf(c);
   if (i >= 0) g.checks.splice(i, 1);
+  saveCheckGroup(g);
 }
 
 // ---- Çek düzenle (satır-içi) ----
@@ -143,6 +145,7 @@ function saveEdit(g: CheckGroup, c: CheckEntry) {
   c.amount = editAmount.value;
   editing.value = null;
   resort(g);
+  saveCheckGroup(g);
   toast.add({ severity: "success", summary: "Çek güncellendi", life: 1800 });
 }
 
@@ -170,16 +173,16 @@ function save() {
   if (!form.firma.trim()) return;
   if (editTarget.value) {
     Object.assign(editTarget.value, { firma: form.firma, bank: form.bank, currency: form.currency });
+    saveCheckGroup(editTarget.value);
     toast.add({ severity: "success", summary: "Güncellendi", detail: form.firma, life: 2000 });
   } else {
-    checkGroups.push({ id: finUid(), firma: form.firma, bank: form.bank, currency: form.currency, checks: [] });
+    saveCheckGroup({ firma: form.firma, bank: form.bank, currency: form.currency, checks: [] });
     toast.add({ severity: "success", summary: "Firma eklendi", detail: form.firma, life: 2000 });
   }
   dialog.value = false;
 }
 function removeGroup(g: CheckGroup) {
-  const i = checkGroups.indexOf(g);
-  if (i >= 0) checkGroups.splice(i, 1);
+  if (g.id) deleteCheckGroup(g.id);
 }
 </script>
 
