@@ -162,12 +162,15 @@ export const fixedExpenses = reactive<FixedExpense[]>([
   { name: "Telefon + İnternet", amount: 38000, currency: "TL", dayOfMonth: 10 },
 ]);
 
+// Krediler — RGD kredi ödemeleri Excel'inden türetildi. Yalnızca ödenmemiş,
+// vadesi gelecekteki taksitler; kimi EUR kimi TL. (dummy)
 export const loans = reactive<Loan[]>([
-  { name: "Garanti Kredi 40M", bank: "Garanti", remaining: 35513242, currency: "TL", monthlyInstallment: 2100000 },
-  { name: "Kuveyt EUR Kredi", bank: "Kuveyt Türk", remaining: 813458, currency: "EUR", monthlyInstallment: 42000 },
-  { name: "TEB 10M Exim", bank: "TEB", remaining: 12230000, currency: "TL", monthlyInstallment: 950000 },
-  { name: "TF Leasing", bank: "TF", remaining: 10509994, currency: "TL", monthlyInstallment: 620000 },
-  { name: "YPK 5M", bank: "YPK", remaining: 5000000, currency: "TL", monthlyInstallment: 410000 },
+  { name: "Türkiye Finans Leasing", bank: "Türkiye Finans", remaining: 1910908, currency: "TL", monthlyInstallment: 477727 },
+  { name: "Yapı Kredi 5M Spot", bank: "Yapı Kredi", remaining: 3014012, currency: "TL", monthlyInstallment: 430478 },
+  { name: "Yapı Kredi Eximbank 10M", bank: "Eximbank", remaining: 3333333, currency: "TL", monthlyInstallment: 1666667 },
+  { name: "ING Rotatif Kredi", bank: "ING", remaining: 100000, currency: "TL", monthlyInstallment: 100000 },
+  { name: "Türkiye Finans 300.000 €", bank: "Türkiye Finans", remaining: 317490, currency: "EUR", monthlyInstallment: 317490 },
+  { name: "Garanti 200.000 €", bank: "Garanti", remaining: 68783, currency: "EUR", monthlyInstallment: 17196 },
 ]);
 
 export const checks = reactive<CheckItem[]>([

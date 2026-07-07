@@ -87,9 +87,17 @@ export function monthlyCashflow(months = 12): CashRow[] {
     if (i >= 0) buckets[i].expense += toEur(c.amount, c.currency);
   }
 
+  // Sabit giderler her ay tekrar eder
   const fixedMonthly = fixedExpenses.reduce((s, f) => s + toEur(f.amount, f.currency), 0);
-  const loanMonthly = loans.reduce((s, l) => s + toEur(l.monthlyInstallment, l.currency), 0);
-  for (const b of buckets) b.expense += fixedMonthly + loanMonthly;
+  for (const b of buckets) b.expense += fixedMonthly;
+
+  // Krediler: her ay taksit kadar, kalan bitene dek (kısa krediler erken biter)
+  for (const l of loans) {
+    const inst = toEur(l.monthlyInstallment, l.currency);
+    if (inst <= 0) continue;
+    const monthsLeft = Math.min(months, Math.max(1, Math.round(toEur(l.remaining, l.currency) / inst)));
+    for (let i = 0; i < monthsLeft; i++) buckets[i].expense += inst;
+  }
 
   let run = cash.eur + cash.tl / eurTry; // bugünkü kasadan başla
   return buckets.map((b) => {
