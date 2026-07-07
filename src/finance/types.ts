@@ -68,12 +68,18 @@ export interface FixedExpense {
   currency: Currency;
   dayOfMonth: number;
 }
+export interface LoanInstallment {
+  date: string; // ISO — taksit vadesi
+  amount: number;
+}
 export interface Loan {
   name: string;
   bank: string;
   remaining: number;
   currency: Currency;
   monthlyInstallment: number;
+  /** Gelecek taksitler (tarih+tutar). Varsa nakit akışı bunları kullanır. */
+  installments?: LoanInstallment[];
 }
 export interface CheckItem {
   firma: string;
