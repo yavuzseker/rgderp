@@ -68,27 +68,28 @@
         <p v-if="(sel.paymentTerms || []).length && totalPct !== 100" class="warn"><i class="pi pi-exclamation-triangle" /> Oranlar toplamı %{{ totalPct }} — %100 olmalı.</p>
       </div>
 
-      <!-- Giderler -->
+      <!-- Giderler (projelerden) -->
       <div class="blk">
         <div class="blk-head">
           <h3><i class="pi pi-arrow-down-left" /> Proje Giderleri</h3>
-          <span class="blk-sub">Tahmini</span>
+          <span class="blk-sub">Projelerden</span>
         </div>
         <table class="ftable">
           <thead>
-            <tr><th>Açıklama</th><th>Kategori</th><th class="r">Tutar</th><th>Tarih</th></tr>
+            <tr><th>Proje</th><th>Açıklama</th><th>Kategori</th><th class="r">Tutar</th><th>Tarih</th></tr>
           </thead>
           <tbody>
-            <tr v-for="(e, i) in (sel.expenses || [])" :key="i">
-              <td>{{ e.description }}</td>
-              <td><span class="cat">{{ e.category }}</span></td>
-              <td class="r mono">{{ fmtMoney(e.amount, cur) }}</td>
-              <td>{{ fmtDate(e.date) }}</td>
+            <tr v-for="(row, i) in expLines" :key="i">
+              <td>{{ row.project }}</td>
+              <td>{{ row.e.description }}</td>
+              <td><span class="cat">{{ row.e.category }}</span></td>
+              <td class="r mono">{{ fmtMoney(row.e.amount, cur) }}</td>
+              <td>{{ fmtDate(row.e.date) }}</td>
             </tr>
-            <tr v-if="!(sel.expenses || []).length"><td colspan="4" class="empty">Gider girilmemiş.</td></tr>
+            <tr v-if="!expLines.length"><td colspan="5" class="empty">Gider yok — Projeler / Proje Giderleri'nden girilir.</td></tr>
           </tbody>
           <tfoot>
-            <tr><td colspan="2">Toplam</td><td class="r mono"><b>{{ fmtMoney(expense, cur) }}</b></td><td></td></tr>
+            <tr><td colspan="3">Toplam</td><td class="r mono"><b>{{ fmtMoney(expense, cur) }}</b></td><td></td></tr>
           </tfoot>
         </table>
       </div>
@@ -115,6 +116,13 @@ const profit = computed(() => (sel.value ? orderProfit(sel.value) : 0));
 const totalPct = computed(() => (sel.value?.paymentTerms ?? []).reduce((s, t) => s + t.percent, 0));
 const termsTotal = computed(() => (sel.value ? orderTermsTotal(sel.value) : 0));
 const amountOf = (t: PaymentTerm) => (sel.value ? termAmount(sel.value, t.percent) : 0);
+const expLines = computed(() =>
+  sel.value
+    ? db.projects
+        .filter((p) => p.orderId === sel.value!.id)
+        .flatMap((p) => (p.expenses ?? []).map((e) => ({ project: p.name, e })))
+    : []
+);
 
 const marginClass = (m: number) => (m < 0 ? "neg" : m < 20 ? "low" : "ok");
 </script>

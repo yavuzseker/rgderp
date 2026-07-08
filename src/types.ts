@@ -71,9 +71,10 @@ export interface Project {
   currentStageIndex: number;
   stages: OrderStage[];
   createdAt: string; // ISO
+  expenses?: OrderExpense[]; // proje giderleri (para birimi bağlı siparişten)
 }
 
-/** Siparişin proje gideri (tahmini). */
+/** Proje gideri (tahmini). Para birimi bağlı siparişin currency'sinden gelir. */
 export interface OrderExpense {
   description: string;
   category: string;

@@ -250,6 +250,11 @@ export async function deleteProject(id: string) {
   await deleteDoc(doc(firestore, "projects", id));
 }
 
+/** Projenin alanlarını doğrudan günceller (proje giderleri için). */
+export async function patchProject(id: string, patch: Partial<Project>) {
+  await updateDoc(doc(firestore, "projects", id), patch);
+}
+
 export async function advanceProjectStage(projectId: string, outQty: number, scrapQty: number) {
   const p = db.projects.find((x) => x.id === projectId);
   if (!p) return;

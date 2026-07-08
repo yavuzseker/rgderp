@@ -22,7 +22,11 @@ export const orderCollected = (o: Order) =>
   (o.paymentTerms ?? [])
     .filter((t) => t.status === "tahsil")
     .reduce((s, t) => s + termAmount(o, t.percent), 0);
-export const orderExpense = (o: Order) => (o.expenses ?? []).reduce((s, e) => s + e.amount, 0);
+// Gider = siparişin ALTINDAKİ PROJELERİN giderleri (üretim maliyeti projede).
+export const orderExpense = (o: Order) =>
+  db.projects
+    .filter((p) => p.orderId === o.id)
+    .reduce((s, p) => s + (p.expenses ?? []).reduce((x, e) => x + e.amount, 0), 0);
 export const orderProfit = (o: Order) => orderRevenue(o) - orderExpense(o);
 export const orderMargin = (o: Order) => {
   const r = orderRevenue(o);
@@ -64,15 +68,19 @@ export function monthlyCashflow(months = 12): CashRow[] {
     return buckets.findIndex((b) => b.y === d.getFullYear() && b.m === d.getMonth());
   };
 
-  // Siparişler: gelir (ödeme koşulları) + gider
+  // Siparişler: gelir (ödeme koşulları)
   for (const o of db.orders) {
     for (const t of o.paymentTerms ?? []) {
       const i = idxOf(t.dueDate);
       if (i >= 0) buckets[i].income += toEur(termAmount(o, t.percent), cur(o));
     }
-    for (const e of o.expenses ?? []) {
+  }
+  // Projeler: gider (para birimi bağlı siparişten)
+  for (const p of db.projects) {
+    const c = db.orders.find((o) => o.id === p.orderId)?.currency ?? "EUR";
+    for (const e of p.expenses ?? []) {
       const i = idxOf(e.date);
-      if (i >= 0) buckets[i].expense += toEur(e.amount, cur(o));
+      if (i >= 0) buckets[i].expense += toEur(e.amount, c);
     }
   }
 
