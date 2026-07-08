@@ -14,7 +14,7 @@
         <template v-for="item in nav" :key="item.label">
           <!-- Alt menüsü olmayan normal öğe -->
           <router-link
-            v-if="!item.children"
+            v-if="!item.sections"
             :to="item.to!"
             class="nav-item"
             :class="{ active: isActive(item.to!) }"
@@ -24,7 +24,7 @@
             <span v-if="!collapsed">{{ item.label }}</span>
           </router-link>
 
-          <!-- Açılır grup (Finans) -->
+          <!-- Açılır grup (Finans) — bölümlü -->
           <template v-else>
             <button
               class="nav-item nav-group"
@@ -37,16 +37,19 @@
               <i v-if="!collapsed" class="pi pi-chevron-down chev" :class="{ open: isOpen(item.label) }" />
             </button>
             <div v-if="!collapsed && isOpen(item.label)" class="subnav">
-              <router-link
-                v-for="c in item.children"
-                :key="c.to"
-                :to="c.to"
-                class="nav-sub"
-                :class="{ active: subActive(c) }"
-              >
-                <i :class="['pi', c.icon]" />
-                <span>{{ c.label }}</span>
-              </router-link>
+              <template v-for="sec in item.sections" :key="sec.label">
+                <div class="subnav-label">{{ sec.label }}</div>
+                <router-link
+                  v-for="c in sec.items"
+                  :key="c.to"
+                  :to="c.to"
+                  class="nav-sub"
+                  :class="{ active: subActive(c) }"
+                >
+                  <i :class="['pi', c.icon]" />
+                  <span>{{ c.label }}</span>
+                </router-link>
+              </template>
             </div>
           </template>
         </template>
@@ -91,7 +94,8 @@ const route = useRoute();
 const collapsed = ref(false);
 
 interface SubItem { to: string; label: string; icon: string; exact?: boolean }
-interface NavItem { to?: string; label: string; icon: string; children?: SubItem[] }
+interface NavSection { label: string; items: SubItem[] }
+interface NavItem { to?: string; label: string; icon: string; sections?: NavSection[] }
 
 const nav: NavItem[] = [
   { to: "/", label: "Genel Bakış", icon: "pi-th-large" },
@@ -100,14 +104,22 @@ const nav: NavItem[] = [
   {
     label: "Finans",
     icon: "pi-wallet",
-    children: [
-      { to: "/finance", label: "Genel Bakış", icon: "pi-chart-bar", exact: true },
-      { to: "/finance/projeler", label: "Proje Finansı", icon: "pi-folder" },
-      { to: "/finance/gelirler", label: "Gelirler", icon: "pi-arrow-down-left" },
-      { to: "/finance/giderler", label: "Proje Giderleri", icon: "pi-arrow-up-right" },
-      { to: "/finance/sabit", label: "Sabit Giderler", icon: "pi-refresh" },
-      { to: "/finance/krediler", label: "Krediler", icon: "pi-percentage" },
-      { to: "/finance/cekler", label: "Çekler", icon: "pi-money-bill" },
+    sections: [
+      { label: "Özet", items: [
+        { to: "/finance", label: "Genel Bakış", icon: "pi-chart-bar", exact: true },
+        { to: "/finance/projeler", label: "Proje Finansı", icon: "pi-folder" },
+      ] },
+      { label: "Gelir", items: [
+        { to: "/finance/gelirler", label: "Gelirler", icon: "pi-arrow-down-left" },
+      ] },
+      { label: "Proje Gideri", items: [
+        { to: "/finance/giderler", label: "Proje Giderleri", icon: "pi-arrow-up-right" },
+      ] },
+      { label: "Şirket Yükümlülükleri", items: [
+        { to: "/finance/sabit", label: "Sabit Giderler", icon: "pi-refresh" },
+        { to: "/finance/krediler", label: "Krediler", icon: "pi-percentage" },
+        { to: "/finance/cekler", label: "Çekler", icon: "pi-money-bill" },
+      ] },
     ],
   },
   { to: "/products", label: "Ürünler", icon: "pi-box" },
@@ -130,7 +142,7 @@ function subActive(c: SubItem) {
   return c.exact ? route.path === c.to : route.path.startsWith(c.to);
 }
 function groupActive(item: NavItem) {
-  return (item.children ?? []).some((c) => route.path.startsWith(c.to));
+  return (item.sections ?? []).some((s) => s.items.some((c) => route.path.startsWith(c.to)));
 }
 </script>
 
@@ -241,6 +253,17 @@ function groupActive(item: NavItem) {
 .nav-group .chev.open {
   transform: rotate(180deg);
 }
+
+/* Alt menü bölüm başlığı */
+.subnav-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #6f9fbf;
+  padding: 10px 12px 4px;
+}
+.subnav-label:first-child { padding-top: 2px; }
 
 /* Alt menü */
 .subnav {
