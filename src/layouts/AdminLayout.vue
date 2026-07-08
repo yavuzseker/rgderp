@@ -110,12 +110,11 @@ const nav: NavItem[] = [
         { to: "/finance/projeler", label: "Proje Finansı", icon: "pi-folder" },
       ] },
       { label: "Gelir", items: [
-        { to: "/finance/gelirler", label: "Gelirler", icon: "pi-arrow-down-left" },
+        { to: "/finance/gelirler", label: "Proje Gelirleri", icon: "pi-arrow-down-left" },
+        { to: "/finance/diger-gelir", label: "Diğer Gelirler", icon: "pi-plus-circle" },
       ] },
-      { label: "Proje Gideri", items: [
+      { label: "Gider", items: [
         { to: "/finance/giderler", label: "Proje Giderleri", icon: "pi-arrow-up-right" },
-      ] },
-      { label: "Şirket Yükümlülükleri", items: [
         { to: "/finance/sabit", label: "Sabit Giderler", icon: "pi-refresh" },
         { to: "/finance/krediler", label: "Krediler", icon: "pi-percentage" },
         { to: "/finance/cekler", label: "Çekler", icon: "pi-money-bill" },

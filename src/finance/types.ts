@@ -61,6 +61,15 @@ export interface CashBalance {
   eur: number;
 }
 
+/** Proje dışı gelir (KDV iade, ortak geri ödeme, kasa girişi vb.). */
+export interface OtherIncome {
+  id?: string;
+  date: string; // ISO
+  description: string;
+  amount: number;
+  currency: Currency;
+}
+
 // ---- Şirket geneli yükümlülükler ----
 /** Bir sabit gider kaleminin tek aylık kaydı. */
 export interface FixedEntry {

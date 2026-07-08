@@ -28,7 +28,8 @@ export const router = createRouter({
           children: [
             { path: "", name: "finance", component: () => import("./views/finance/FinanceOverview.vue"), meta: { title: "Finans · Genel Bakış" } },
             { path: "projeler", name: "fin-projeler", component: () => import("./views/finance/ProjectFinance.vue"), meta: { title: "Finans · Proje Finansı" } },
-            { path: "gelirler", name: "fin-gelirler", component: () => import("./views/finance/tables/ProjeGelirleri.vue"), meta: { title: "Finans · Gelirler" } },
+            { path: "gelirler", name: "fin-gelirler", component: () => import("./views/finance/tables/ProjeGelirleri.vue"), meta: { title: "Finans · Proje Gelirleri" } },
+            { path: "diger-gelir", name: "fin-diger-gelir", component: () => import("./views/finance/tables/DigerGelirler.vue"), meta: { title: "Finans · Diğer Gelirler" } },
             { path: "giderler", name: "fin-giderler", component: () => import("./views/finance/tables/ProjeGiderleri.vue"), meta: { title: "Finans · Proje Giderleri" } },
             { path: "sabit", name: "fin-sabit", component: () => import("./views/finance/tables/SabitGiderler.vue"), meta: { title: "Finans · Sabit Giderler" } },
             { path: "krediler", name: "fin-krediler", component: () => import("./views/finance/tables/Krediler.vue"), meta: { title: "Finans · Krediler" } },

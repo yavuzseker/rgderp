@@ -4,7 +4,7 @@
 // (expenses) vardır. Krediler/çekler/sabit giderler financeStore/mock'ta.
 // Ekranlar bu fonksiyonları computed() içinde çağırır → computed = cache.
 import { db } from "@/data/store";
-import { cash, eurTry } from "@/data/financeMock";
+import { cash, eurTry, otherIncome } from "@/data/financeMock";
 import { loans, checkGroups, fixedGroups } from "@/data/financeStore";
 import type { Order } from "@/types";
 
@@ -75,6 +75,12 @@ export function monthlyCashflow(months = 12): CashRow[] {
       if (i >= 0) buckets[i].income += toEur(termAmount(o, t.percent), cur(o));
     }
   }
+  // Diğer gelirler (proje dışı)
+  for (const g of otherIncome) {
+    const i = idxOf(g.date);
+    if (i >= 0) buckets[i].income += toEur(g.amount, g.currency);
+  }
+
   // Projeler: gider (para birimi bağlı siparişten)
   for (const p of db.projects) {
     const c = db.orders.find((o) => o.id === p.orderId)?.currency ?? "EUR";
