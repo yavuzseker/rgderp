@@ -143,6 +143,23 @@ export const financeProjects = reactive<FinanceProject[]>([
       { description: "Yedek parça tedarik", category: "Malzeme", amount: 1650000, currency: "TL", date: "2026-04-20" },
     ],
   },
+  {
+    // Aynı müşteri (Karsan) için İKİNCİ sipariş — sipariş bazlı gruplamayı gösterir
+    id: pid(),
+    orderNo: "SP-2026-013",
+    name: "Karsan Fikstür Revizyon",
+    customer: "Karsan",
+    currency: "TL",
+    contractValue: 1200000,
+    milestones: build(1200000, "TL", [
+      { code: "ORDER", desc: "Sipariş avansı", pct: 40, date: "2026-08-15", status: "bekliyor" },
+      { code: "ATR", desc: "Kabul teknik onayı", pct: 60, date: "2026-11-15", status: "bekliyor" },
+    ]),
+    expenses: [
+      { description: "Fikstür malzeme", category: "Malzeme", amount: 380000, currency: "TL", date: "2026-08-01" },
+      { description: "İşçilik & montaj", category: "İşçilik", amount: 220000, currency: "TL", date: "2026-09-10" },
+    ],
+  },
 ]);
 
 // EUR/TL varsayılan kur (haftalık TCMB — dummy)
