@@ -211,23 +211,26 @@ export const getProject = (id: string) => db.projects.find((p) => p.id === id);
 export async function createProject(input: {
   orderId: string;
   name: string;
-  productId: string;
-  qty: number;
+  productId?: string;
+  qty?: number;
 }) {
   const order = db.orders.find((o) => o.id === input.orderId);
-  const product = db.products.find((p) => p.id === input.productId);
-  if (!order || !product) return;
+  if (!order) return;
+  const product = input.productId ? db.products.find((p) => p.id === input.productId) : undefined;
+  const qty = input.qty ?? 0;
 
   const id = uid();
-  const stages: OrderStage[] = product.stages.map((s, i) => ({
-    key: uid(),
-    name: s.name,
-    supplierId: s.defaultSupplierId,
-    status: i === 0 ? "active" : "pending",
-    inQty: i === 0 ? input.qty : 0,
-    outQty: 0,
-    scrapQty: 0,
-  }));
+  const stages: OrderStage[] = product
+    ? product.stages.map((s, i) => ({
+        key: uid(),
+        name: s.name,
+        supplierId: s.defaultSupplierId,
+        status: i === 0 ? "active" : "pending",
+        inQty: i === 0 ? qty : 0,
+        outQty: 0,
+        scrapQty: 0,
+      }))
+    : [];
 
   const project: Project = {
     id,
@@ -235,9 +238,9 @@ export async function createProject(input: {
     orderNo: order.orderNo,
     customerName: order.customerName,
     name: input.name,
-    productId: product.id,
-    productName: product.name,
-    qty: input.qty,
+    productId: product?.id ?? "",
+    productName: product?.name ?? "",
+    qty,
     status: "open",
     currentStageIndex: 0,
     stages,

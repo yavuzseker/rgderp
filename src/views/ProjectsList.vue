@@ -62,10 +62,10 @@
         </div>
         <div class="field"><label>Proje Adı *</label><InputText v-model="form.name" :invalid="submitted && !form.name" placeholder="Örn: Ring Üretimi" /></div>
         <div class="two">
-          <div class="field"><label>Ürün *</label>
-            <Select v-model="form.productId" :options="db.products" optionLabel="name" optionValue="id" :invalid="submitted && !form.productId" placeholder="Ürün seç" fluid />
+          <div class="field"><label>Ürün</label>
+            <Select v-model="form.productId" :options="db.products" optionLabel="name" optionValue="id" placeholder="Ürün seç (opsiyonel)" showClear fluid />
           </div>
-          <div class="field"><label>Miktar *</label><InputNumber v-model="form.qty" :min="1" :invalid="submitted && !form.qty" fluid /></div>
+          <div class="field"><label>Miktar</label><InputNumber v-model="form.qty" :min="0" placeholder="Opsiyonel" fluid /></div>
         </div>
         <div v-if="route.length" class="route-preview">
           <span class="rp-title">Üretim Rotası</span>
@@ -135,8 +135,13 @@ function openNew(order?: Order) {
 }
 function save() {
   submitted.value = true;
-  if (!form.orderId || !form.name.trim() || !form.productId || !form.qty) return;
-  createProject({ orderId: form.orderId, name: form.name, productId: form.productId, qty: form.qty });
+  if (!form.orderId || !form.name.trim()) return;
+  createProject({
+    orderId: form.orderId,
+    name: form.name,
+    productId: form.productId ?? undefined,
+    qty: form.qty ?? undefined,
+  });
   toast.add({ severity: "success", summary: "Proje oluşturuldu", detail: form.name, life: 2500 });
   dialog.value = false;
 }
