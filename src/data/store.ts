@@ -130,46 +130,32 @@ export async function deleteCustomer(id: string) {
   await deleteDoc(doc(firestore, "customers", id));
 }
 
-// ---- Orders ----
+// ---- Orders (ticari/ödeme başlığı; üretim = projeler) ----
 export async function createOrder(input: {
   orderNo: string;
-  productId: string;
   customerId: string;
-  totalQty: number;
-  dueDate: string;
   orderDate?: string;
   contractValue?: number;
   currency?: "EUR" | "TL";
   paymentTerms?: PaymentTerm[];
 }) {
-  const product = db.products.find((p) => p.id === input.productId);
   const customer = db.customers.find((c) => c.id === input.customerId);
-  if (!product || !customer) return;
+  if (!customer) return;
 
   const id = uid();
-  const stages: OrderStage[] = product.stages.map((s, i) => ({
-    key: uid(),
-    name: s.name,
-    supplierId: s.defaultSupplierId,
-    status: i === 0 ? "active" : "pending",
-    inQty: i === 0 ? input.totalQty : 0,
-    outQty: 0,
-    scrapQty: 0,
-  }));
-
   const order: Order = {
     id,
     orderNo: input.orderNo,
-    productId: product.id,
-    productName: product.name,
+    productId: "",
+    productName: "",
     customerId: customer.id,
     customerName: customer.name,
-    totalQty: input.totalQty,
+    totalQty: 0,
     status: "open",
     currentStageIndex: 0,
     createdAt: new Date().toISOString(),
-    dueDate: input.dueDate,
-    stages,
+    dueDate: "",
+    stages: [],
     orderDate: input.orderDate ?? new Date().toISOString(),
     contractValue: input.contractValue ?? 0,
     currency: input.currency ?? "EUR",
@@ -192,8 +178,6 @@ export async function updateOrder(
   input: {
     orderNo: string;
     customerId: string;
-    totalQty: number;
-    dueDate: string;
     orderDate?: string;
     contractValue?: number;
     currency?: "EUR" | "TL";
@@ -208,21 +192,11 @@ export async function updateOrder(
     orderNo: input.orderNo,
     customerId: input.customerId,
     customerName: customer?.name ?? o.customerName,
-    totalQty: input.totalQty,
-    dueDate: input.dueDate,
     orderDate: input.orderDate ?? o.orderDate,
     contractValue: input.contractValue ?? o.contractValue ?? 0,
     currency: input.currency ?? o.currency ?? "EUR",
     paymentTerms: input.paymentTerms ?? o.paymentTerms ?? [],
   };
-
-  // Sipariş henüz ilk aşamada ve çıktı verilmemişse giriş miktarını da güncelle.
-  const first = o.stages[0];
-  if (o.currentStageIndex === 0 && first?.status === "active" && first.outQty === 0) {
-    const stages = o.stages.map((s) => ({ ...s }));
-    stages[0].inQty = input.totalQty;
-    patch.stages = stages;
-  }
 
   await updateDoc(doc(firestore, "orders", id), patch);
 }

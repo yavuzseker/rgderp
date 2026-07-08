@@ -35,8 +35,10 @@
           </div>
         </template>
       </Column>
-      <Column field="productName" header="Ürün" sortable />
       <Column field="customerName" header="Müşteri" sortable />
+      <Column field="orderDate" header="Alınma" sortable style="width: 120px">
+        <template #body="{ data }">{{ data.orderDate ? fmtDate(data.orderDate) : "—" }}</template>
+      </Column>
       <Column field="contractValue" header="Bedel" sortable style="width: 150px">
         <template #body="{ data }">
           <span v-if="data.contractValue" class="mono">{{ fmtMoney(data.contractValue, data.currency || 'EUR') }}</span>
@@ -48,20 +50,6 @@
           <span v-if="data.paymentTerms?.length" class="terms-badge">{{ data.paymentTerms.length }} koşul</span>
           <span v-else class="muted">—</span>
         </template>
-      </Column>
-      <Column field="totalQty" header="Miktar" sortable style="width: 100px">
-        <template #body="{ data }"><strong>{{ data.totalQty }}</strong></template>
-      </Column>
-      <Column header="İlerleme" style="width: 180px">
-        <template #body="{ data }">
-          <div class="prog">
-            <ProgressBar :value="progressOf(data.stages)" :showValue="false" style="height: 7px" />
-            <span>{{ progressOf(data.stages) }}%</span>
-          </div>
-        </template>
-      </Column>
-      <Column field="dueDate" header="Termin" sortable style="width: 130px">
-        <template #body="{ data }">{{ fmtDate(data.dueDate) }}</template>
       </Column>
       <Column header="Durum" sortable field="status" style="width: 130px">
         <template #body="{ data }">
@@ -83,37 +71,17 @@
         <div class="two">
           <div class="field">
             <label>Sipariş No *</label>
-            <InputText v-model="form.orderNo" autofocus :invalid="submitted && !form.orderNo" placeholder="SP-2026-004" />
-          </div>
-          <div class="field">
-            <label>Miktar *</label>
-            <InputNumber v-model="form.totalQty" :min="1" :invalid="submitted && !form.totalQty" placeholder="500" fluid />
-          </div>
-        </div>
-        <div class="field">
-          <label>Ürün *</label>
-          <Select v-model="form.productId" :options="db.products" optionLabel="name" optionValue="id"
-            :invalid="submitted && !form.productId" :disabled="!!editId" placeholder="Ürün seç" fluid>
-            <template #option="{ option }">
-              <div class="opt"><span>{{ option.name }}</span><Tag :value="option.code" severity="secondary" /></div>
-            </template>
-          </Select>
-          <small v-if="editId" class="hint">Ürün değiştirilemez — üretim rotasını belirler.</small>
-        </div>
-        <div class="field">
-          <label>Müşteri *</label>
-          <Select v-model="form.customerId" :options="db.customers" optionLabel="name" optionValue="id"
-            :invalid="submitted && !form.customerId" placeholder="Müşteri seç" fluid />
-        </div>
-        <div class="two">
-          <div class="field">
-            <label>Termin Tarihi *</label>
-            <DatePicker v-model="form.dueDate" dateFormat="dd.mm.yy" :invalid="submitted && !form.dueDate" showIcon fluid />
+            <InputText v-model="form.orderNo" autofocus :invalid="submitted && !form.orderNo" placeholder="PCAMG002700-1" />
           </div>
           <div class="field">
             <label>Alınma Tarihi *</label>
             <DatePicker v-model="form.orderDate" dateFormat="dd.mm.yy" :invalid="submitted && !form.orderDate" showIcon fluid />
           </div>
+        </div>
+        <div class="field">
+          <label>Müşteri *</label>
+          <Select v-model="form.customerId" :options="db.customers" optionLabel="name" optionValue="id"
+            :invalid="submitted && !form.customerId" placeholder="Müşteri seç" fluid />
         </div>
 
         <div class="two">
@@ -143,16 +111,6 @@
           </div>
           <small v-if="!form.terms.length" class="hint">Örn: ORDER %15, ATFE %10, ATFMR %30 … Toplam %100 olmalı.</small>
         </div>
-
-        <div v-if="selectedRoute.length" class="route-preview">
-          <span class="rp-title">Üretim Rotası</span>
-          <div class="rp-flow">
-            <template v-for="(s, i) in selectedRoute" :key="i">
-              <span class="rp-step">{{ i + 1 }}. {{ s }}</span>
-              <i v-if="i < selectedRoute.length - 1" class="pi pi-angle-right rp-arrow" />
-            </template>
-          </div>
-        </div>
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
@@ -177,10 +135,9 @@ import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Avatar from "primevue/avatar";
 import Tag from "primevue/tag";
-import ProgressBar from "primevue/progressbar";
 import PageHeader from "@/components/PageHeader.vue";
 import { db, createOrder, updateOrder, deleteOrder } from "@/data/store";
-import { orderStatus, fmtDate, progressOf } from "@/utils";
+import { orderStatus, fmtDate } from "@/utils";
 import { fmtMoney, MILESTONE_CATALOG } from "@/finance/types";
 import type { Order, PaymentTerm } from "@/types";
 
@@ -201,25 +158,16 @@ const editId = ref<string | null>(null);
 interface TermForm { code: string; percent: number | null; dueDate: Date | null; status: PaymentTerm["status"] }
 interface Form {
   orderNo: string;
-  productId: string | null;
   customerId: string | null;
-  totalQty: number | null;
-  dueDate: Date | null;
   orderDate: Date | null;
   contractValue: number | null;
   currency: "EUR" | "TL";
   terms: TermForm[];
 }
 const empty = (): Form => ({
-  orderNo: "", productId: null, customerId: null, totalQty: null, dueDate: null,
-  orderDate: null, contractValue: null, currency: "EUR", terms: [],
+  orderNo: "", customerId: null, orderDate: null, contractValue: null, currency: "EUR", terms: [],
 });
 const form = reactive<Form>(empty());
-
-const selectedRoute = computed(() => {
-  const p = db.products.find((x) => x.id === form.productId);
-  return p ? p.stages.map((s) => s.name) : [];
-});
 
 const totalPct = computed(() => form.terms.reduce((s, t) => s + (t.percent ?? 0), 0));
 const termAmount = (t: TermForm) => Math.round(((form.contractValue ?? 0) * (t.percent ?? 0)) / 100);
@@ -240,10 +188,7 @@ function openNew() {
 function openEdit(o: Order) {
   Object.assign(form, {
     orderNo: o.orderNo,
-    productId: o.productId,
     customerId: o.customerId,
-    totalQty: o.totalQty,
-    dueDate: new Date(o.dueDate),
     orderDate: o.orderDate ? new Date(o.orderDate) : new Date(o.createdAt),
     contractValue: o.contractValue ?? null,
     currency: o.currency ?? "EUR",
@@ -255,13 +200,15 @@ function openEdit(o: Order) {
 }
 function save() {
   submitted.value = true;
-  if (!form.orderNo.trim() || !form.productId || !form.customerId || !form.totalQty || !form.dueDate || !form.orderDate || !form.contractValue) return;
+  if (!form.orderNo.trim() || !form.customerId || !form.orderDate || !form.contractValue) return;
 
   const paymentTerms: PaymentTerm[] = form.terms
     .filter((t) => t.code && t.percent != null && t.dueDate)
     .map((t) => ({ code: t.code, percent: t.percent as number, dueDate: (t.dueDate as Date).toISOString(), status: t.status }));
 
-  const fin = {
+  const payload = {
+    orderNo: form.orderNo,
+    customerId: form.customerId,
     orderDate: form.orderDate.toISOString(),
     contractValue: form.contractValue,
     currency: form.currency,
@@ -269,23 +216,10 @@ function save() {
   };
 
   if (editId.value) {
-    updateOrder(editId.value, {
-      orderNo: form.orderNo,
-      customerId: form.customerId,
-      totalQty: form.totalQty,
-      dueDate: form.dueDate.toISOString(),
-      ...fin,
-    });
+    updateOrder(editId.value, payload);
     toast.add({ severity: "success", summary: "Sipariş güncellendi", detail: form.orderNo, life: 2500 });
   } else {
-    createOrder({
-      orderNo: form.orderNo,
-      productId: form.productId,
-      customerId: form.customerId,
-      totalQty: form.totalQty,
-      dueDate: form.dueDate.toISOString(),
-      ...fin,
-    });
+    createOrder(payload);
     toast.add({ severity: "success", summary: "Sipariş oluşturuldu", detail: form.orderNo, life: 2500 });
   }
   dialog.value = false;
