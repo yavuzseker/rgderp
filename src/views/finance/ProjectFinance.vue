@@ -1,80 +1,71 @@
 <template>
   <div class="pf">
-    <!-- Sol: sipariş > proje listesi -->
+    <!-- Sol: sipariş listesi -->
     <aside class="pf-list">
-      <div v-for="grp in grouped" :key="grp.orderNo" class="pf-group">
-        <div class="pf-order"><i class="pi pi-clipboard" /> {{ grp.orderNo }}</div>
-        <button
-          v-for="p in grp.projects"
-          :key="p.id"
-          class="pf-item"
-          :class="{ active: p.id === selectedId }"
-          @click="selectedId = p.id"
-        >
-          <div class="pf-item-t">
-            <b>{{ p.name }}</b>
-            <span>{{ p.customer }}</span>
-          </div>
-          <span class="pf-margin" :class="marginClass(projectMargin(p))">%{{ projectMargin(p) }}</span>
-        </button>
-      </div>
+      <button
+        v-for="o in db.orders"
+        :key="o.id"
+        class="pf-item"
+        :class="{ active: sel && o.id === sel.id }"
+        @click="selectedId = o.id"
+      >
+        <div class="pf-item-t">
+          <b>{{ o.orderNo }}</b>
+          <span>{{ o.customerName }}</span>
+        </div>
+        <span class="pf-margin" :class="marginClass(orderMargin(o))">%{{ orderMargin(o) }}</span>
+      </button>
+      <div v-if="!db.orders.length" class="pf-empty">Sipariş yok.</div>
     </aside>
 
-    <!-- Sağ: seçili proje detayı -->
+    <!-- Sağ: seçili sipariş detayı -->
     <section v-if="sel" class="pf-detail">
       <!-- Kâr/zarar özeti -->
       <div class="pnl">
         <div class="pnl-box inc">
-          <span>Gelir (Sözleşme)</span>
-          <b>{{ fmtMoney(revenue, sel.currency) }}</b>
+          <span>Gelir (Bedel)</span>
+          <b>{{ fmtMoney(revenue, cur) }}</b>
         </div>
         <div class="pnl-op">−</div>
         <div class="pnl-box exp">
           <span>Tahmini Gider</span>
-          <b>{{ fmtMoney(expense, sel.currency) }}</b>
+          <b>{{ fmtMoney(expense, cur) }}</b>
         </div>
         <div class="pnl-op">=</div>
         <div class="pnl-box profit" :class="{ neg: profit < 0 }">
-          <span>Tahmini Kâr · %{{ projectMargin(sel) }}</span>
-          <b>{{ fmtMoney(profit, sel.currency) }}</b>
+          <span>Tahmini Kâr · %{{ orderMargin(sel) }}</span>
+          <b>{{ fmtMoney(profit, cur) }}</b>
         </div>
       </div>
 
-      <!-- Ödeme takvimi (milestone) -->
+      <!-- Ödeme koşulları -->
       <div class="blk">
         <div class="blk-head">
-          <h3><i class="pi pi-calendar" /> Ödeme Takvimi (Milestone)</h3>
-          <span class="blk-sub">Teknik onaya bağlı, tahmini</span>
+          <h3><i class="pi pi-calendar" /> Ödeme Koşulları</h3>
+          <span class="blk-sub">{{ sel.orderNo }} · {{ sel.customerName }}</span>
         </div>
         <table class="ftable">
           <thead>
-            <tr><th>Kod</th><th>Açıklama</th><th class="r">%</th><th class="r">Tutar</th><th>Tahmini Tarih</th><th>Durum</th></tr>
+            <tr><th>Kod</th><th class="r">%</th><th class="r">Tutar</th><th>Tahmini Vade</th><th>Durum</th></tr>
           </thead>
           <tbody>
-            <tr v-for="(m, i) in sel.milestones" :key="i">
-              <td><span class="code">{{ m.code }}</span></td>
-              <td>{{ m.description }}</td>
-              <td class="r">{{ m.percent }}</td>
-              <td class="r mono">{{ fmtMoney(m.amount, m.currency) }}</td>
+            <tr v-for="(t, i) in (sel.paymentTerms || [])" :key="i">
+              <td><span class="code">{{ t.code }}</span></td>
+              <td class="r">{{ t.percent }}</td>
+              <td class="r mono">{{ fmtMoney(amountOf(t), cur) }}</td>
               <td>
-                {{ fmtDate(m.estimatedDate) }}
-                <small class="wl" :class="{ over: weeksLeft(m.estimatedDate).overdue }" v-if="m.status !== 'tahsil'">
-                  · {{ weeksLeft(m.estimatedDate).text }}
-                </small>
+                {{ fmtDate(t.dueDate) }}
+                <small class="wl" :class="{ over: weeksLeft(t.dueDate).overdue }" v-if="t.status !== 'tahsil'">· {{ weeksLeft(t.dueDate).text }}</small>
               </td>
-              <td><Tag :value="MILESTONE_STATUS[m.status].label" :severity="MILESTONE_STATUS[m.status].severity" /></td>
+              <td><Tag :value="MILESTONE_STATUS[t.status].label" :severity="MILESTONE_STATUS[t.status].severity" /></td>
             </tr>
+            <tr v-if="!(sel.paymentTerms || []).length"><td colspan="5" class="empty">Ödeme koşulu girilmemiş.</td></tr>
           </tbody>
           <tfoot>
-            <tr>
-              <td colspan="2">Toplam</td>
-              <td class="r">{{ totalPct }}</td>
-              <td class="r mono"><b>{{ fmtMoney(msTotal, sel.currency) }}</b></td>
-              <td colspan="2"></td>
-            </tr>
+            <tr><td>Toplam</td><td class="r">{{ totalPct }}</td><td class="r mono"><b>{{ fmtMoney(termsTotal, cur) }}</b></td><td colspan="2"></td></tr>
           </tfoot>
         </table>
-        <p v-if="totalPct !== 100" class="warn"><i class="pi pi-exclamation-triangle" /> Oranlar toplamı %{{ totalPct }} — %100 olmalı.</p>
+        <p v-if="(sel.paymentTerms || []).length && totalPct !== 100" class="warn"><i class="pi pi-exclamation-triangle" /> Oranlar toplamı %{{ totalPct }} — %100 olmalı.</p>
       </div>
 
       <!-- Giderler -->
@@ -88,16 +79,16 @@
             <tr><th>Açıklama</th><th>Kategori</th><th class="r">Tutar</th><th>Tarih</th></tr>
           </thead>
           <tbody>
-            <tr v-for="(e, i) in sel.expenses" :key="i">
+            <tr v-for="(e, i) in (sel.expenses || [])" :key="i">
               <td>{{ e.description }}</td>
               <td><span class="cat">{{ e.category }}</span></td>
-              <td class="r mono">{{ fmtMoney(e.amount, e.currency) }}</td>
+              <td class="r mono">{{ fmtMoney(e.amount, cur) }}</td>
               <td>{{ fmtDate(e.date) }}</td>
             </tr>
-            <tr v-if="!sel.expenses.length"><td colspan="4" class="empty">Gider girilmemiş.</td></tr>
+            <tr v-if="!(sel.expenses || []).length"><td colspan="4" class="empty">Gider girilmemiş.</td></tr>
           </tbody>
           <tfoot>
-            <tr><td colspan="2">Toplam</td><td class="r mono"><b>{{ fmtMoney(expense, sel.currency) }}</b></td><td></td></tr>
+            <tr><td colspan="2">Toplam</td><td class="r mono"><b>{{ fmtMoney(expense, cur) }}</b></td><td></td></tr>
           </tfoot>
         </table>
       </div>
@@ -108,34 +99,22 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import Tag from "primevue/tag";
-import { financeProjects } from "@/data/financeMock";
+import { db } from "@/data/store";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, MILESTONE_STATUS } from "@/finance/types";
-import {
-  projectRevenue,
-  projectExpense,
-  projectProfit,
-  projectMargin,
-  milestonesTotal,
-} from "@/finance/calc";
+import { orderRevenue, orderExpense, orderProfit, orderMargin, orderTermsTotal, termAmount } from "@/finance/calc";
+import type { PaymentTerm } from "@/types";
 
-const selectedId = ref(financeProjects[0]?.id ?? "");
-const sel = computed(() => financeProjects.find((p) => p.id === selectedId.value));
+const selectedId = ref("");
+const sel = computed(() => db.orders.find((o) => o.id === selectedId.value) ?? db.orders[0]);
+const cur = computed<"EUR" | "TL">(() => sel.value?.currency ?? "EUR");
 
-const grouped = computed(() => {
-  const map = new Map<string, typeof financeProjects>();
-  for (const p of financeProjects) {
-    if (!map.has(p.orderNo)) map.set(p.orderNo, []);
-    map.get(p.orderNo)!.push(p);
-  }
-  return [...map.entries()].map(([orderNo, projects]) => ({ orderNo, projects }));
-});
-
-const revenue = computed(() => (sel.value ? projectRevenue(sel.value) : 0));
-const expense = computed(() => (sel.value ? projectExpense(sel.value) : 0));
-const profit = computed(() => (sel.value ? projectProfit(sel.value) : 0));
-const totalPct = computed(() => (sel.value ? sel.value.milestones.reduce((s, m) => s + m.percent, 0) : 0));
-const msTotal = computed(() => (sel.value ? milestonesTotal(sel.value) : 0));
+const revenue = computed(() => (sel.value ? orderRevenue(sel.value) : 0));
+const expense = computed(() => (sel.value ? orderExpense(sel.value) : 0));
+const profit = computed(() => (sel.value ? orderProfit(sel.value) : 0));
+const totalPct = computed(() => (sel.value?.paymentTerms ?? []).reduce((s, t) => s + t.percent, 0));
+const termsTotal = computed(() => (sel.value ? orderTermsTotal(sel.value) : 0));
+const amountOf = (t: PaymentTerm) => (sel.value ? termAmount(sel.value, t.percent) : 0);
 
 const marginClass = (m: number) => (m < 0 ? "neg" : m < 20 ? "low" : "ok");
 </script>
@@ -143,7 +122,8 @@ const marginClass = (m: number) => (m < 0 ? "neg" : m < 20 ? "low" : "ok");
 <style scoped>
 .pf { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
 
-.pf-list { display: flex; flex-direction: column; gap: 16px; }
+.pf-list { display: flex; flex-direction: column; gap: 8px; }
+.pf-empty { color: #94a3b8; font-size: 13px; padding: 12px; text-align: center; }
 .pf-group { display: flex; flex-direction: column; gap: 6px; }
 .pf-order { font-size: 12px; font-weight: 700; color: #64748b; display: flex; align-items: center; gap: 6px; padding: 0 4px; }
 .pf-item {

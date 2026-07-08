@@ -167,9 +167,15 @@ export async function createOrder(input: {
     contractValue: input.contractValue ?? 0,
     currency: input.currency ?? "EUR",
     paymentTerms: input.paymentTerms ?? [],
+    expenses: [],
   };
 
   await setDoc(doc(firestore, "orders", id), order);
+}
+
+/** Siparişin alanlarını doğrudan günceller (finans ekranları için: paymentTerms/expenses). */
+export async function patchOrder(id: string, patch: Partial<Order>) {
+  await updateDoc(doc(firestore, "orders", id), patch);
 }
 
 export const getOrder = (id: string) => db.orders.find((o) => o.id === id);

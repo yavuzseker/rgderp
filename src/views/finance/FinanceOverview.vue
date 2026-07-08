@@ -106,7 +106,8 @@ import { computed, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
-import { financeProjects, eurTry, cash } from "@/data/financeMock";
+import { eurTry, cash } from "@/data/financeMock";
+import { db } from "@/data/store";
 import { fmtMoney, weeksLeft } from "@/finance/types";
 import {
   totalContract,
@@ -115,6 +116,7 @@ import {
   totalProjectExpense,
   totalProjectProfit,
   monthlyCashflow,
+  termAmount,
 } from "@/finance/calc";
 
 const cashDialog = ref(false);
@@ -151,20 +153,20 @@ function short(n: number) {
 }
 
 const upcoming = computed(() =>
-  financeProjects
-    .flatMap((p) =>
-      p.milestones
-        .filter((m) => m.status !== "tahsil")
-        .map((m) => {
-          const w = weeksLeft(m.estimatedDate);
+  db.orders
+    .flatMap((o) =>
+      (o.paymentTerms ?? [])
+        .filter((t) => t.status !== "tahsil")
+        .map((t) => {
+          const w = weeksLeft(t.dueDate);
           return {
-            code: m.code,
-            project: p.name,
-            customer: p.customer,
-            percent: m.percent,
-            amount: m.amount,
-            currency: p.currency,
-            date: m.estimatedDate,
+            code: t.code,
+            project: o.orderNo,
+            customer: o.customerName,
+            percent: t.percent,
+            amount: termAmount(o, t.percent),
+            currency: o.currency ?? "EUR",
+            date: t.dueDate,
             when: w.text,
             over: w.overdue,
           };

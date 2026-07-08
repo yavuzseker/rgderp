@@ -1,72 +1,79 @@
 <template>
   <div class="fpage">
-    <DataTable :value="rows" dataKey="key" paginator :rows="12" removableSort class="card-table"
-      :filters="filters" :globalFilterFields="['orderNo', 'project', 'customer', 'code']">
+    <DataTable :value="db.orders" dataKey="id" v-model:expandedRows="expandedRows"
+      paginator :rows="10" removableSort class="card-table" sortField="orderNo" :sortOrder="1">
       <template #header>
         <div class="fh">
-          <div><h3>Proje Gelirleri (Alacaklar)</h3><p>Teknik onaya bağlı milestone ödemeleri</p></div>
-          <div class="fh-r">
-            <IconField><InputIcon class="pi pi-search" /><InputText v-model="filters.global.value" placeholder="Ara..." /></IconField>
-            <Button label="Yeni Alacak" icon="pi pi-plus" @click="openNew" />
-          </div>
+          <div><h3>Proje Gelirleri (Alacaklar)</h3><p>Sipariş bazında — satıra basınca ödeme koşulları açılır</p></div>
         </div>
       </template>
-      <template #empty><div class="empty">Kayıt yok.</div></template>
+      <template #empty><div class="empty">Sipariş yok.</div></template>
 
-      <Column field="orderNo" header="Sipariş" sortable style="width: 120px" />
-      <Column field="project" header="Proje" sortable>
-        <template #body="{ data }"><b>{{ data.project }}</b><br /><small class="sub">{{ data.customer }}</small></template>
+      <Column expander style="width: 3rem" />
+      <Column field="orderNo" header="Sipariş" sortable style="width: 170px">
+        <template #body="{ data }"><b class="mono">{{ data.orderNo }}</b></template>
       </Column>
-      <Column field="code" header="Milestone" sortable style="width: 210px">
-        <template #body="{ data }"><span class="code">{{ data.code }}</span> <small>{{ data.description }}</small></template>
-      </Column>
-      <Column field="percent" header="%" sortable style="width: 70px"><template #body="{ data }">%{{ data.percent }}</template></Column>
-      <Column field="amount" header="Tutar" sortable style="width: 150px">
-        <template #body="{ data }"><span class="mono">{{ fmtMoney(data.amount, data.currency) }}</span></template>
-      </Column>
-      <Column field="date" header="Tahmini Tarih" sortable style="width: 190px">
+      <Column field="customerName" header="Müşteri" sortable />
+      <Column header="Bedel" style="width: 150px">
         <template #body="{ data }">
-          {{ fmtDate(data.date) }}
-          <small class="wl" :class="{ over: weeksLeft(data.date).overdue }" v-if="data.status !== 'tahsil'">· {{ weeksLeft(data.date).text }}</small>
+          <span v-if="data.contractValue" class="mono">{{ fmtMoney(data.contractValue, data.currency || 'EUR') }}</span>
+          <span v-else class="muted">—</span>
         </template>
       </Column>
-      <Column field="status" header="Durum" sortable style="width: 130px">
-        <template #body="{ data }"><Tag :value="stat(data.status).label" :severity="stat(data.status).severity" /></template>
+      <Column header="Koşul" style="width: 90px">
+        <template #body="{ data }"><b>{{ (data.paymentTerms || []).length }}</b></template>
       </Column>
-      <Column header="" style="width: 100px">
+      <Column header="Tahsil / Bedel" style="width: 200px">
         <template #body="{ data }">
-          <div class="row-actions">
-            <Button icon="pi pi-pencil" text rounded severity="secondary" @click="openEdit(data)" v-tooltip.top="'Düzenle'" />
-            <Button icon="pi pi-trash" text rounded severity="danger" @click="del(data)" v-tooltip.top="'Sil'" />
+          <span class="mono ok">{{ fmtMoney(collected(data), data.currency || 'EUR') }}</span>
+          <small class="sub"> / {{ fmtMoney(data.contractValue || 0, data.currency || 'EUR') }}</small>
+        </template>
+      </Column>
+
+      <template #expansion="{ data }">
+        <div class="inst">
+          <div class="inst-head">
+            <span><i class="pi pi-calendar" /> {{ data.orderNo }} Ödeme Koşulları <small>({{ data.currency || 'EUR' }})</small></span>
+            <div class="inst-r">
+              <span class="tot" :class="{ bad: totalPct(data) !== 100 }">Toplam %{{ totalPct(data) }}</span>
+              <Button icon="pi pi-plus" label="Koşul Ekle" size="small" @click="openAdd(data)" />
+            </div>
           </div>
-        </template>
-      </Column>
+          <table class="inst-table">
+            <thead><tr><th>Kod</th><th class="r">%</th><th class="r">Tutar</th><th>Tahmini Vade</th><th>Durum</th><th></th></tr></thead>
+            <tbody>
+              <tr v-for="(t, i) in sortedTerms(data)" :key="i">
+                <td><span class="code">{{ t.code }}</span></td>
+                <td class="r">%{{ t.percent }}</td>
+                <td class="r mono">{{ fmtMoney(amountOf(data, t), data.currency || 'EUR') }}</td>
+                <td>{{ fmtDate(t.dueDate) }} <small v-if="t.status !== 'tahsil'" class="wl" :class="{ over: weeksLeft(t.dueDate).overdue }">· {{ weeksLeft(t.dueDate).text }}</small></td>
+                <td><Tag :value="MILESTONE_STATUS[t.status].label" :severity="MILESTONE_STATUS[t.status].severity" /></td>
+                <td class="r">
+                  <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" @click="openEdit(data, t)" v-tooltip.top="'Düzenle'" />
+                  <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="del(data, t)" v-tooltip.top="'Sil'" />
+                </td>
+              </tr>
+              <tr v-if="!(data.paymentTerms || []).length"><td colspan="6" class="empty">Ödeme koşulu yok. “Koşul Ekle” ile ekleyin.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </DataTable>
 
-    <Dialog v-model:visible="dialog" :header="editTarget ? 'Alacağı Düzenle' : 'Yeni Alacak (Milestone)'" modal :style="{ width: '540px' }">
+    <Dialog v-model:visible="dialog" :header="editTarget ? 'Koşulu Düzenle' : 'Yeni Ödeme Koşulu'" modal :style="{ width: '500px' }">
       <div class="form">
-        <div class="field"><label>Proje *</label>
-          <Select v-model="form.projectId" :options="projectOpts" optionLabel="label" optionValue="value"
-            :invalid="submitted && !form.projectId" :disabled="!!editTarget" placeholder="Sipariş / proje seç" fluid />
-        </div>
-        <div v-if="selProject" class="contract-info">
-          <i class="pi pi-file-edit" /> Sözleşme Bedeli: <b>{{ fmtMoney(selProject.contractValue, selProject.currency) }}</b>
-        </div>
+        <div v-if="currentOrder" class="contract-info"><i class="pi pi-file-edit" /> Bedel: <b>{{ fmtMoney(currentOrder.contractValue || 0, currentOrder.currency || 'EUR') }}</b></div>
         <div class="two">
-          <div class="field"><label>Milestone *</label>
-            <Select v-model="form.code" :options="MILESTONE_OPTIONS" optionLabel="label" optionValue="code"
-              :invalid="submitted && !form.code" placeholder="Kod seç" fluid @change="onCode" />
+          <div class="field"><label>Kod *</label>
+            <Select v-model="form.code" :options="MILESTONE_CATALOG" optionLabel="code" optionValue="code" :invalid="submitted && !form.code" placeholder="Kod" fluid @change="onCode" />
           </div>
           <div class="field"><label>Yüzde (%) *</label><InputNumber v-model="form.percent" :min="0" :max="100" :invalid="submitted && !form.percent" fluid /></div>
         </div>
-        <div class="field"><label>Açıklama</label><InputText v-model="form.description" placeholder="Örn: %30 ATFMR + COP" /></div>
         <div class="two">
-          <div class="field"><label>Tutar (otomatik)</label>
-            <div class="amount-box">{{ fmtMoney(computedAmount, selProject?.currency ?? "EUR") }}</div>
-          </div>
+          <div class="field"><label>Tutar (otomatik)</label><div class="amount-box">{{ fmtMoney(computedAmount, currentOrder?.currency || 'EUR') }}</div></div>
           <div class="field"><label>Durum</label><Select v-model="form.status" :options="STATUS_OPTIONS" optionLabel="label" optionValue="value" fluid /></div>
         </div>
-        <div class="field"><label>Tahmini Tarih *</label><DatePicker v-model="estDate" dateFormat="dd.mm.yy" :invalid="submitted && !estDate" showIcon fluid /></div>
+        <div class="field"><label>Tahmini Vade *</label><DatePicker v-model="dueDate" dateFormat="dd.mm.yy" :invalid="submitted && !dueDate" showIcon fluid /></div>
       </div>
       <template #footer>
         <Button label="İptal" text @click="dialog = false" />
@@ -82,127 +89,108 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Tag from "primevue/tag";
-import IconField from "primevue/iconfield";
-import InputIcon from "primevue/inputicon";
 import { useToast } from "primevue/usetoast";
-import { financeProjects } from "@/data/financeMock";
+import { db, patchOrder } from "@/data/store";
 import { fmtDate } from "@/utils";
-import { fmtMoney, weeksLeft, MILESTONE_STATUS, type Milestone, type MilestoneStatus } from "@/finance/types";
-import { milestoneAmount, projectOptions } from "@/finance/calc";
-import { MILESTONE_OPTIONS, STATUS_OPTIONS } from "@/finance/ui";
+import { fmtMoney, weeksLeft, MILESTONE_CATALOG, MILESTONE_STATUS } from "@/finance/types";
+import { STATUS_OPTIONS } from "@/finance/ui";
+import type { Order, PaymentTerm } from "@/types";
 
 const toast = useToast();
-const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
-const stat = (s: MilestoneStatus) => MILESTONE_STATUS[s];
+const expandedRows = ref<Order[]>([]);
 
-const rows = computed(() =>
-  financeProjects.flatMap((p) =>
-    p.milestones.map((m, i) => ({
-      key: p.id + "-" + i,
-      pid: p.id,
-      m,
-      orderNo: p.orderNo,
-      project: p.name,
-      customer: p.customer,
-      code: m.code,
-      description: m.description,
-      percent: m.percent,
-      amount: m.amount,
-      currency: m.currency,
-      date: m.estimatedDate,
-      status: m.status,
-    }))
-  )
-);
-
-const projectOpts = computed(() => projectOptions());
+const amountOf = (o: Order, t: PaymentTerm) => Math.round(((o.contractValue ?? 0) * t.percent) / 100);
+const collected = (o: Order) =>
+  (o.paymentTerms ?? []).filter((t) => t.status === "tahsil").reduce((s, t) => s + amountOf(o, t), 0);
+const totalPct = (o: Order) => (o.paymentTerms ?? []).reduce((s, t) => s + t.percent, 0);
+const sortedTerms = (o: Order) => [...(o.paymentTerms ?? [])].sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1));
+const persist = (o: Order) => patchOrder(o.id, { paymentTerms: o.paymentTerms ?? [] });
 
 const dialog = ref(false);
 const submitted = ref(false);
-const estDate = ref<Date | null>(null);
-const editTarget = ref<Milestone | null>(null);
-interface Form { projectId: string; code: string; percent: number; description: string; status: MilestoneStatus; }
-const empty = (): Form => ({ projectId: "", code: "", percent: 0, description: "", status: "bekliyor" });
+const editTarget = ref<PaymentTerm | null>(null);
+const currentOrder = ref<Order | null>(null);
+const dueDate = ref<Date | null>(null);
+interface Form { code: string; percent: number | null; status: PaymentTerm["status"] }
+const empty = (): Form => ({ code: "", percent: null, status: "bekliyor" });
 const form = reactive<Form>(empty());
 
-const selProject = computed(() => financeProjects.find((p) => p.id === form.projectId));
 const computedAmount = computed(() =>
-  selProject.value ? milestoneAmount(selProject.value.contractValue, form.percent || 0) : 0
+  currentOrder.value ? Math.round(((currentOrder.value.contractValue ?? 0) * (form.percent ?? 0)) / 100) : 0
 );
-
 function onCode() {
-  const opt = MILESTONE_OPTIONS.find((o) => o.code === form.code);
-  if (opt && !form.percent) form.percent = opt.defaultPercent;
+  const def = MILESTONE_CATALOG.find((m) => m.code === form.code);
+  if (def && form.percent == null) form.percent = def.defaultPercent;
 }
-function openNew() {
+function openAdd(o: Order) {
+  currentOrder.value = o;
   Object.assign(form, empty());
-  estDate.value = null;
+  dueDate.value = null;
   editTarget.value = null;
   submitted.value = false;
   dialog.value = true;
 }
-function openEdit(row: { pid: string; m: Milestone }) {
-  Object.assign(form, {
-    projectId: row.pid,
-    code: row.m.code,
-    percent: row.m.percent,
-    description: row.m.description,
-    status: row.m.status,
-  });
-  estDate.value = row.m.estimatedDate ? new Date(row.m.estimatedDate) : null;
-  editTarget.value = row.m;
+function openEdit(o: Order, t: PaymentTerm) {
+  currentOrder.value = o;
+  Object.assign(form, { code: t.code, percent: t.percent, status: t.status });
+  dueDate.value = new Date(t.dueDate);
+  editTarget.value = t;
   submitted.value = false;
   dialog.value = true;
 }
 function save() {
   submitted.value = true;
-  if (!form.projectId || !form.code || !form.percent || !estDate.value) return;
-  const p = financeProjects.find((x) => x.id === form.projectId);
-  if (!p) return;
-  const amount = milestoneAmount(p.contractValue, form.percent);
+  if (!form.code || !form.percent || !dueDate.value) return;
+  const o = currentOrder.value;
+  if (!o) return;
+  if (!o.paymentTerms) o.paymentTerms = [];
+  const date = dueDate.value.toISOString();
   if (editTarget.value) {
-    Object.assign(editTarget.value, {
-      code: form.code,
-      description: form.description,
-      percent: form.percent,
-      amount,
-      estimatedDate: estDate.value.toISOString(),
-      status: form.status,
-    });
-    toast.add({ severity: "success", summary: "Güncellendi", detail: `${p.name} · ${form.code}`, life: 2200 });
+    Object.assign(editTarget.value, { code: form.code, percent: form.percent, dueDate: date, status: form.status });
+    toast.add({ severity: "success", summary: "Güncellendi", detail: `${o.orderNo} · ${form.code}`, life: 2000 });
   } else {
-    p.milestones.push({
-      code: form.code,
-      description: form.description,
-      percent: form.percent,
-      amount,
-      currency: p.currency,
-      estimatedDate: estDate.value.toISOString(),
-      status: form.status,
-    });
-    toast.add({ severity: "success", summary: "Alacak eklendi", detail: `${p.name} · ${form.code}`, life: 2200 });
+    o.paymentTerms.push({ code: form.code, percent: form.percent, dueDate: date, status: form.status });
+    toast.add({ severity: "success", summary: "Koşul eklendi", detail: `${o.orderNo} · ${form.code}`, life: 2000 });
   }
+  persist(o);
   dialog.value = false;
 }
-function del(row: { pid: string; m: Milestone }) {
-  const p = financeProjects.find((x) => x.id === row.pid);
-  if (!p) return;
-  const i = p.milestones.indexOf(row.m);
-  if (i >= 0) p.milestones.splice(i, 1);
+function del(o: Order, t: PaymentTerm) {
+  const i = (o.paymentTerms ?? []).indexOf(t);
+  if (i >= 0) o.paymentTerms!.splice(i, 1);
+  persist(o);
 }
 </script>
 
 <style scoped>
 @import "@/views/finance/tables/ftable.css";
-.fh-r { display: flex; align-items: center; gap: 10px; }
+.muted { color: #cbd5e1; }
 .sub { color: #94a3b8; }
+.ok { color: #10b981; }
 .wl { color: #94a3b8; font-weight: 600; }
 .wl.over { color: #ef4444; }
+
+.inst { padding: 6px 8px 10px; }
+.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.inst-head i { color: #1488c8; }
+.inst-head small { color: #94a3b8; font-weight: 500; }
+.inst-r { display: flex; align-items: center; gap: 10px; }
+.tot { font-size: 12px; font-weight: 700; color: #10b981; background: #e7f7ef; padding: 2px 8px; border-radius: 20px; }
+.tot.bad { color: #b45309; background: #fef3e2; }
+
+.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
+.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
+.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
+.inst-table tbody tr:last-child td { border-bottom: none; }
+.inst-table .r { text-align: right; }
+.inst-table .mono { font-variant-numeric: tabular-nums; }
+.code { font-size: 11px; font-weight: 800; color: #1488c8; background: #e8f4fb; padding: 3px 7px; border-radius: 6px; }
+.empty { text-align: center; color: #94a3b8; padding: 14px; }
 .contract-info { font-size: 13px; color: #475569; background: #f6fbfe; border: 1px solid #dbeefb; border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; }
 .contract-info i { color: #1488c8; }
 .contract-info b { color: #0f172a; }

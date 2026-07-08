@@ -57,6 +57,14 @@ export interface PaymentTerm {
   status: "bekliyor" | "faturalandi" | "tahsil";
 }
 
+/** Siparişin proje gideri (tahmini). */
+export interface OrderExpense {
+  description: string;
+  category: string;
+  amount: number;
+  date: string; // ISO
+}
+
 export interface Order {
   id: string;
   orderNo: string;
@@ -74,5 +82,6 @@ export interface Order {
   orderDate?: string; // alınma tarihi (ISO)
   contractValue?: number; // bedel
   currency?: "EUR" | "TL";
-  paymentTerms?: PaymentTerm[]; // ödeme koşulları
+  paymentTerms?: PaymentTerm[]; // ödeme koşulları (gelir)
+  expenses?: OrderExpense[]; // proje giderleri
 }
