@@ -37,6 +37,18 @@
       </Column>
       <Column field="productName" header="Ürün" sortable />
       <Column field="customerName" header="Müşteri" sortable />
+      <Column field="contractValue" header="Bedel" sortable style="width: 150px">
+        <template #body="{ data }">
+          <span v-if="data.contractValue" class="mono">{{ fmtMoney(data.contractValue, data.currency || 'EUR') }}</span>
+          <span v-else class="muted">—</span>
+        </template>
+      </Column>
+      <Column header="Ödeme" style="width: 130px">
+        <template #body="{ data }">
+          <span v-if="data.paymentTerms?.length" class="terms-badge">{{ data.paymentTerms.length }} koşul</span>
+          <span v-else class="muted">—</span>
+        </template>
+      </Column>
       <Column field="totalQty" header="Miktar" sortable style="width: 100px">
         <template #body="{ data }"><strong>{{ data.totalQty }}</strong></template>
       </Column>
@@ -309,6 +321,9 @@ function goDetail(e: { data: Order }) {
 .rp-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
 .rp-step { font-size: 13px; color: #115c88; background: #fff; padding: 4px 10px; border-radius: 8px; }
 .rp-arrow { color: #66b8e6; font-size: 12px; }
+
+.muted { color: #cbd5e1; }
+.terms-badge { font-size: 11.5px; font-weight: 700; color: #1488c8; background: #e8f4fb; padding: 3px 9px; border-radius: 20px; }
 
 /* Ödeme koşulları */
 .terms { border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; background: #f8fafc; }
