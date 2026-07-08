@@ -24,6 +24,7 @@ import type {
   Order,
   OrderStage,
   ShipmentDoc,
+  PaymentTerm,
 } from "@/types";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -129,6 +130,10 @@ export async function createOrder(input: {
   customerId: string;
   totalQty: number;
   dueDate: string;
+  orderDate?: string;
+  contractValue?: number;
+  currency?: "EUR" | "TL";
+  paymentTerms?: PaymentTerm[];
 }) {
   const product = db.products.find((p) => p.id === input.productId);
   const customer = db.customers.find((c) => c.id === input.customerId);
@@ -158,6 +163,10 @@ export async function createOrder(input: {
     createdAt: new Date().toISOString(),
     dueDate: input.dueDate,
     stages,
+    orderDate: input.orderDate ?? new Date().toISOString(),
+    contractValue: input.contractValue ?? 0,
+    currency: input.currency ?? "EUR",
+    paymentTerms: input.paymentTerms ?? [],
   };
 
   await setDoc(doc(firestore, "orders", id), order);
@@ -167,7 +176,16 @@ export const getOrder = (id: string) => db.orders.find((o) => o.id === id);
 
 export async function updateOrder(
   id: string,
-  input: { orderNo: string; customerId: string; totalQty: number; dueDate: string }
+  input: {
+    orderNo: string;
+    customerId: string;
+    totalQty: number;
+    dueDate: string;
+    orderDate?: string;
+    contractValue?: number;
+    currency?: "EUR" | "TL";
+    paymentTerms?: PaymentTerm[];
+  }
 ) {
   const o = db.orders.find((x) => x.id === id);
   if (!o) return;
@@ -179,6 +197,10 @@ export async function updateOrder(
     customerName: customer?.name ?? o.customerName,
     totalQty: input.totalQty,
     dueDate: input.dueDate,
+    orderDate: input.orderDate ?? o.orderDate,
+    contractValue: input.contractValue ?? o.contractValue ?? 0,
+    currency: input.currency ?? o.currency ?? "EUR",
+    paymentTerms: input.paymentTerms ?? o.paymentTerms ?? [],
   };
 
   // Sipariş henüz ilk aşamada ve çıktı verilmemişse giriş miktarını da güncelle.

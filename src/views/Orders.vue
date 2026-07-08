@@ -93,9 +93,43 @@
           <Select v-model="form.customerId" :options="db.customers" optionLabel="name" optionValue="id"
             :invalid="submitted && !form.customerId" placeholder="Müşteri seç" fluid />
         </div>
-        <div class="field">
-          <label>Termin Tarihi *</label>
-          <DatePicker v-model="form.dueDate" dateFormat="dd.mm.yy" :invalid="submitted && !form.dueDate" showIcon fluid />
+        <div class="two">
+          <div class="field">
+            <label>Termin Tarihi *</label>
+            <DatePicker v-model="form.dueDate" dateFormat="dd.mm.yy" :invalid="submitted && !form.dueDate" showIcon fluid />
+          </div>
+          <div class="field">
+            <label>Alınma Tarihi *</label>
+            <DatePicker v-model="form.orderDate" dateFormat="dd.mm.yy" :invalid="submitted && !form.orderDate" showIcon fluid />
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="field">
+            <label>Bedel *</label>
+            <InputNumber v-model="form.contractValue" :min="0" :invalid="submitted && !form.contractValue" fluid />
+          </div>
+          <div class="field">
+            <label>Para Birimi</label>
+            <Select v-model="form.currency" :options="CURR" optionLabel="label" optionValue="value" fluid />
+          </div>
+        </div>
+
+        <!-- Ödeme koşulları (milestone) -->
+        <div class="terms">
+          <div class="terms-head">
+            <label>Ödeme Koşulları</label>
+            <span class="terms-tot" :class="{ bad: form.terms.length && totalPct !== 100 }">Toplam %{{ totalPct }}</span>
+            <Button label="Koşul Ekle" icon="pi pi-plus" size="small" text @click="addTerm" />
+          </div>
+          <div v-for="(t, i) in form.terms" :key="i" class="term-row">
+            <Select v-model="t.code" :options="MILESTONE_CATALOG" optionLabel="code" optionValue="code" placeholder="Kod" class="t-code" @change="onTermCode(t)" />
+            <InputNumber v-model="t.percent" :min="0" :max="100" suffix=" %" class="t-pct" />
+            <DatePicker v-model="t.dueDate" dateFormat="dd.mm.yy" placeholder="Tahmini vade" showIcon class="t-date" />
+            <span class="t-amt">{{ fmtMoney(termAmount(t), form.currency) }}</span>
+            <Button icon="pi pi-times" text rounded size="small" severity="danger" @click="form.terms.splice(i, 1)" />
+          </div>
+          <small v-if="!form.terms.length" class="hint">Örn: ORDER %15, ATFE %10, ATFMR %30 … Toplam %100 olmalı.</small>
         </div>
 
         <div v-if="selectedRoute.length" class="route-preview">
@@ -135,7 +169,13 @@ import ProgressBar from "primevue/progressbar";
 import PageHeader from "@/components/PageHeader.vue";
 import { db, createOrder, updateOrder, deleteOrder } from "@/data/store";
 import { orderStatus, fmtDate, progressOf } from "@/utils";
-import type { Order } from "@/types";
+import { fmtMoney, MILESTONE_CATALOG } from "@/finance/types";
+import type { Order, PaymentTerm } from "@/types";
+
+const CURR = [
+  { label: "EUR", value: "EUR" as const },
+  { label: "TL", value: "TL" as const },
+];
 
 const router = useRouter();
 const toast = useToast();
@@ -146,20 +186,38 @@ const dialog = ref(false);
 const submitted = ref(false);
 const editId = ref<string | null>(null);
 
+interface TermForm { code: string; percent: number | null; dueDate: Date | null; status: PaymentTerm["status"] }
 interface Form {
   orderNo: string;
   productId: string | null;
   customerId: string | null;
   totalQty: number | null;
   dueDate: Date | null;
+  orderDate: Date | null;
+  contractValue: number | null;
+  currency: "EUR" | "TL";
+  terms: TermForm[];
 }
-const empty = (): Form => ({ orderNo: "", productId: null, customerId: null, totalQty: null, dueDate: null });
+const empty = (): Form => ({
+  orderNo: "", productId: null, customerId: null, totalQty: null, dueDate: null,
+  orderDate: null, contractValue: null, currency: "EUR", terms: [],
+});
 const form = reactive<Form>(empty());
 
 const selectedRoute = computed(() => {
   const p = db.products.find((x) => x.id === form.productId);
   return p ? p.stages.map((s) => s.name) : [];
 });
+
+const totalPct = computed(() => form.terms.reduce((s, t) => s + (t.percent ?? 0), 0));
+const termAmount = (t: TermForm) => Math.round(((form.contractValue ?? 0) * (t.percent ?? 0)) / 100);
+function addTerm() {
+  form.terms.push({ code: "", percent: null, dueDate: null, status: "bekliyor" });
+}
+function onTermCode(t: TermForm) {
+  const def = MILESTONE_CATALOG.find((m) => m.code === t.code);
+  if (def && t.percent == null) t.percent = def.defaultPercent;
+}
 
 function openNew() {
   Object.assign(form, empty());
@@ -174,6 +232,10 @@ function openEdit(o: Order) {
     customerId: o.customerId,
     totalQty: o.totalQty,
     dueDate: new Date(o.dueDate),
+    orderDate: o.orderDate ? new Date(o.orderDate) : new Date(o.createdAt),
+    contractValue: o.contractValue ?? null,
+    currency: o.currency ?? "EUR",
+    terms: (o.paymentTerms ?? []).map((t) => ({ code: t.code, percent: t.percent, dueDate: new Date(t.dueDate), status: t.status })),
   });
   editId.value = o.id;
   submitted.value = false;
@@ -181,13 +243,26 @@ function openEdit(o: Order) {
 }
 function save() {
   submitted.value = true;
-  if (!form.orderNo.trim() || !form.productId || !form.customerId || !form.totalQty || !form.dueDate) return;
+  if (!form.orderNo.trim() || !form.productId || !form.customerId || !form.totalQty || !form.dueDate || !form.orderDate || !form.contractValue) return;
+
+  const paymentTerms: PaymentTerm[] = form.terms
+    .filter((t) => t.code && t.percent != null && t.dueDate)
+    .map((t) => ({ code: t.code, percent: t.percent as number, dueDate: (t.dueDate as Date).toISOString(), status: t.status }));
+
+  const fin = {
+    orderDate: form.orderDate.toISOString(),
+    contractValue: form.contractValue,
+    currency: form.currency,
+    paymentTerms,
+  };
+
   if (editId.value) {
     updateOrder(editId.value, {
       orderNo: form.orderNo,
       customerId: form.customerId,
       totalQty: form.totalQty,
       dueDate: form.dueDate.toISOString(),
+      ...fin,
     });
     toast.add({ severity: "success", summary: "Sipariş güncellendi", detail: form.orderNo, life: 2500 });
   } else {
@@ -197,6 +272,7 @@ function save() {
       customerId: form.customerId,
       totalQty: form.totalQty,
       dueDate: form.dueDate.toISOString(),
+      ...fin,
     });
     toast.add({ severity: "success", summary: "Sipariş oluşturuldu", detail: form.orderNo, life: 2500 });
   }
@@ -233,4 +309,17 @@ function goDetail(e: { data: Order }) {
 .rp-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
 .rp-step { font-size: 13px; color: #115c88; background: #fff; padding: 4px 10px; border-radius: 8px; }
 .rp-arrow { color: #66b8e6; font-size: 12px; }
+
+/* Ödeme koşulları */
+.terms { border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; background: #f8fafc; }
+.terms-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.terms-head label { font-size: 13px; font-weight: 700; color: #334155; }
+.terms-tot { font-size: 12px; font-weight: 700; color: #10b981; background: #e7f7ef; padding: 2px 8px; border-radius: 20px; }
+.terms-tot.bad { color: #b45309; background: #fef3e2; }
+.terms-head :deep(.p-button) { margin-left: auto; }
+.term-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.t-code { width: 120px; flex-shrink: 0; }
+.t-pct :deep(.p-inputnumber-input) { width: 80px; }
+.t-date :deep(.p-datepicker-input) { width: 130px; }
+.t-amt { flex: 1; text-align: right; font-size: 13px; font-weight: 600; color: #1488c8; font-variant-numeric: tabular-nums; }
 </style>

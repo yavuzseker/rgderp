@@ -49,6 +49,14 @@ export interface ShipmentDoc {
   uploadedAt: string; // ISO
 }
 
+/** Siparişin ödeme koşulu (milestone) — bedelin bir yüzdesi, tahmini tarihli. */
+export interface PaymentTerm {
+  code: string; // ORDER / ATFE / ATFMR / COP ...
+  percent: number;
+  dueDate: string; // ISO — tahmini
+  status: "bekliyor" | "faturalandi" | "tahsil";
+}
+
 export interface Order {
   id: string;
   orderNo: string;
@@ -62,4 +70,9 @@ export interface Order {
   createdAt: string; // ISO
   dueDate: string; // ISO
   stages: OrderStage[];
+  // ---- Finans ----
+  orderDate?: string; // alınma tarihi (ISO)
+  contractValue?: number; // bedel
+  currency?: "EUR" | "TL";
+  paymentTerms?: PaymentTerm[]; // ödeme koşulları
 }
