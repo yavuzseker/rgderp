@@ -96,6 +96,7 @@ interface NavItem { to?: string; label: string; icon: string; children?: SubItem
 const nav: NavItem[] = [
   { to: "/", label: "Genel Bakış", icon: "pi-th-large" },
   { to: "/orders", label: "Siparişler", icon: "pi-clipboard" },
+  { to: "/projects", label: "Projeler", icon: "pi-sitemap" },
   {
     label: "Finans",
     icon: "pi-wallet",

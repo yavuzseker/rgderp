@@ -19,6 +19,8 @@ export const router = createRouter({
         { path: "customers", name: "customers", component: () => import("./views/Customers.vue"), meta: { title: "Müşteriler" } },
         { path: "orders", name: "orders", component: () => import("./views/Orders.vue"), meta: { title: "Siparişler" } },
         { path: "orders/:id", name: "order-detail", component: () => import("./views/OrderDetail.vue"), meta: { title: "Sipariş Detayı" } },
+        { path: "projects", name: "projects", component: () => import("./views/ProjectsList.vue"), meta: { title: "Projeler" } },
+        { path: "projects/:id", name: "project-detail", component: () => import("./views/ProjectDetail.vue"), meta: { title: "Proje Detayı" } },
         {
           path: "finance",
           component: () => import("./views/Finance.vue"),

@@ -57,6 +57,22 @@ export interface PaymentTerm {
   status: "bekliyor" | "faturalandi" | "tahsil";
 }
 
+/** Siparişin altındaki üretim projesi (parça) — kendi ürünü, miktarı, aşamaları. */
+export interface Project {
+  id: string;
+  orderId: string; // bağlı sipariş
+  orderNo: string; // denormalize
+  customerName: string; // denormalize
+  name: string; // proje adı (örn. "Ring Üretimi")
+  productId: string;
+  productName: string;
+  qty: number;
+  status: OrderStatus;
+  currentStageIndex: number;
+  stages: OrderStage[];
+  createdAt: string; // ISO
+}
+
 /** Siparişin proje gideri (tahmini). */
 export interface OrderExpense {
   description: string;

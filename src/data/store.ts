@@ -25,6 +25,7 @@ import type {
   OrderStage,
   ShipmentDoc,
   PaymentTerm,
+  Project,
 } from "@/types";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -36,6 +37,7 @@ interface DB {
   suppliers: Supplier[];
   customers: Customer[];
   orders: Order[];
+  projects: Project[];
   ready: boolean;
 }
 
@@ -44,6 +46,7 @@ export const db = reactive<DB>({
   suppliers: [],
   customers: [],
   orders: [],
+  projects: [],
   ready: false,
 });
 
@@ -83,6 +86,10 @@ export function startListeners() {
     db.orders = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
     loaded.orders = true;
     checkReady();
+  });
+
+  onSnapshot(collection(firestore, "projects"), (snap) => {
+    db.projects = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Project));
   });
 }
 
@@ -222,6 +229,76 @@ export async function updateOrder(
 
 export async function deleteOrder(id: string) {
   await deleteDoc(doc(firestore, "orders", id));
+}
+
+// ---- Projeler (siparişin altında üretim takibi) ----
+export const getProject = (id: string) => db.projects.find((p) => p.id === id);
+
+export async function createProject(input: {
+  orderId: string;
+  name: string;
+  productId: string;
+  qty: number;
+}) {
+  const order = db.orders.find((o) => o.id === input.orderId);
+  const product = db.products.find((p) => p.id === input.productId);
+  if (!order || !product) return;
+
+  const id = uid();
+  const stages: OrderStage[] = product.stages.map((s, i) => ({
+    key: uid(),
+    name: s.name,
+    supplierId: s.defaultSupplierId,
+    status: i === 0 ? "active" : "pending",
+    inQty: i === 0 ? input.qty : 0,
+    outQty: 0,
+    scrapQty: 0,
+  }));
+
+  const project: Project = {
+    id,
+    orderId: order.id,
+    orderNo: order.orderNo,
+    customerName: order.customerName,
+    name: input.name,
+    productId: product.id,
+    productName: product.name,
+    qty: input.qty,
+    status: "open",
+    currentStageIndex: 0,
+    stages,
+    createdAt: new Date().toISOString(),
+  };
+  await setDoc(doc(firestore, "projects", id), project);
+}
+
+export async function deleteProject(id: string) {
+  await deleteDoc(doc(firestore, "projects", id));
+}
+
+export async function advanceProjectStage(projectId: string, outQty: number, scrapQty: number) {
+  const p = db.projects.find((x) => x.id === projectId);
+  if (!p) return;
+  const idx = p.stages.findIndex((s) => s.status === "active");
+  if (idx < 0) return;
+
+  const stages = p.stages.map((s) => ({ ...s }));
+  stages[idx].status = "done";
+  stages[idx].outQty = outQty;
+  stages[idx].scrapQty = scrapQty;
+
+  let status = p.status;
+  let currentStageIndex = p.currentStageIndex;
+  const next = stages[idx + 1];
+  if (next) {
+    next.status = "active";
+    next.inQty = outQty;
+    currentStageIndex = idx + 1;
+    status = "in_progress";
+  } else {
+    status = "completed";
+  }
+  await updateDoc(doc(firestore, "projects", projectId), { stages, status, currentStageIndex });
 }
 
 export async function advanceStage(orderId: string, outQty: number, scrapQty: number) {
