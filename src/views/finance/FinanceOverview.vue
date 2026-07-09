@@ -1,17 +1,22 @@
 <template>
   <div class="fin-overview">
+    <!-- Kur şeridi (kasadan ayrı) -->
+    <div class="fx-bar">
+      <div class="fx-chip" v-tooltip.bottom="fxTip">
+        <i class="pi pi-dollar" />
+        <span class="fx-lbl">EUR/TL</span>
+        <b class="fx-val">{{ fx.eurTry.toFixed(2) }}</b>
+        <small v-if="fx.updatedAt" class="fx-date">{{ shortDate(fx.updatedAt) }}</small>
+        <Button icon="pi pi-refresh" label="Güncelle" size="small" text :loading="fxLoading" @click="updateRate" v-tooltip.top="'TCMB güncel kur'" />
+        <Button icon="pi pi-pencil" size="small" text rounded @click="openRate" v-tooltip.top="'Elle gir'" />
+      </div>
+    </div>
+
     <!-- Kasa -->
     <div class="kasa">
       <div class="kasa-head">
         <span><i class="pi pi-wallet" /> Kasa <small>(bugün)</small></span>
-        <div class="kasa-actions">
-          <div class="fx" v-tooltip.bottom="fxTip">
-            <span class="fx-lbl">EUR/TL</span>
-            <b class="fx-val">{{ fx.eurTry.toFixed(2) }}</b>
-            <Button icon="pi pi-refresh" text rounded size="small" :loading="fxLoading" @click="updateRate" v-tooltip.top="'TCMB\'den güncelle'" />
-          </div>
-          <Button icon="pi pi-pencil" text rounded @click="openCash" v-tooltip.top="'Düzenle'" />
-        </div>
+        <Button icon="pi pi-pencil" text rounded @click="openCash" v-tooltip.top="'Düzenle'" />
       </div>
       <div class="kasa-figs">
         <div class="kfig"><span>TL</span><b>{{ fmtMoney(cash.tl, "TL") }}</b></div>
@@ -99,11 +104,21 @@
       <div class="cash-form">
         <div class="field"><label>TL Bakiye</label><InputNumber v-model="cashForm.tl" :min="0" fluid /></div>
         <div class="field"><label>EUR Bakiye</label><InputNumber v-model="cashForm.eur" :min="0" fluid /></div>
-        <div class="field"><label>EUR/TL Kuru</label><InputNumber v-model="cashForm.rate" :min="0" :minFractionDigits="2" :maxFractionDigits="4" fluid /></div>
       </div>
       <template #footer>
         <Button label="İptal" text @click="cashDialog = false" />
         <Button label="Kaydet" icon="pi pi-check" @click="saveCash" />
+      </template>
+    </Dialog>
+
+    <Dialog v-model:visible="rateDialog" header="EUR/TL Kuru" modal :style="{ width: '340px' }">
+      <div class="cash-form">
+        <div class="field"><label>EUR/TL</label><InputNumber v-model="rateForm" :min="0" :minFractionDigits="2" :maxFractionDigits="4" autofocus fluid /></div>
+        <small class="hint">Ya da "Güncelle" ile TCMB'den otomatik çekebilirsin.</small>
+      </div>
+      <template #footer>
+        <Button label="İptal" text @click="rateDialog = false" />
+        <Button label="Kaydet" icon="pi pi-check" @click="saveRate" />
       </template>
     </Dialog>
   </div>
@@ -132,9 +147,10 @@ import {
 
 const toast = useToast();
 
-// ---- Kur ----
+// ---- Kur (kasadan bağımsız) ----
 const fxLoading = ref(false);
 const fxTip = computed(() => (fx.updatedAt ? "Son güncelleme: " + new Date(fx.updatedAt).toLocaleString("tr-TR") : "Kur elle girildi"));
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
 async function updateRate() {
   fxLoading.value = true;
   try {
@@ -142,24 +158,33 @@ async function updateRate() {
     await saveEurTry(rate);
     toast.add({ severity: "success", summary: "Kur güncellendi", detail: `EUR/TL ${rate.toFixed(2)}`, life: 2500 });
   } catch (e: any) {
-    toast.add({ severity: "error", summary: "Kur alınamadı", detail: e?.message ?? "Hata", life: 4000 });
+    toast.add({ severity: "error", summary: "Kur alınamadı", detail: e?.message ?? "Hata", life: 4500 });
   } finally {
     fxLoading.value = false;
   }
 }
+const rateDialog = ref(false);
+const rateForm = ref(0);
+function openRate() {
+  rateForm.value = fx.eurTry;
+  rateDialog.value = true;
+}
+function saveRate() {
+  if (rateForm.value > 0) saveEurTry(rateForm.value);
+  rateDialog.value = false;
+}
 
+// ---- Kasa (sadece bakiye) ----
 const cashDialog = ref(false);
-const cashForm = reactive({ tl: 0, eur: 0, rate: 0 });
+const cashForm = reactive({ tl: 0, eur: 0 });
 function openCash() {
   cashForm.tl = cash.tl;
   cashForm.eur = cash.eur;
-  cashForm.rate = fx.eurTry;
   cashDialog.value = true;
 }
 function saveCash() {
   cash.tl = cashForm.tl;
   cash.eur = cashForm.eur;
-  if (cashForm.rate > 0 && cashForm.rate !== fx.eurTry) saveEurTry(cashForm.rate);
   cashDialog.value = false;
 }
 
@@ -216,10 +241,13 @@ const upcoming = computed(() =>
 .kasa-head span { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .kasa-head small { color: #8fc4e8; font-weight: 500; }
 .kasa-head :deep(.p-button) { color: #cfe8f8; }
-.kasa-actions { display: flex; align-items: center; gap: 6px; }
-.fx { display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 3px 6px 3px 10px; }
-.fx-lbl { font-size: 11px; color: #a1d2f0; }
-.fx-val { font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+
+.fx-bar { display: flex; justify-content: flex-end; }
+.fx-chip { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #eef2f7; border-radius: 12px; padding: 5px 6px 5px 14px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04); }
+.fx-chip > i { color: #10b981; font-size: 14px; }
+.fx-lbl { font-size: 12px; color: #64748b; }
+.fx-val { font-size: 16px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+.fx-date { font-size: 11px; color: #94a3b8; }
 .kasa-figs { display: flex; gap: 40px; margin-top: 12px; flex-wrap: wrap; }
 .kfig span { display: block; font-size: 12px; color: #a1d2f0; margin-bottom: 3px; }
 .kfig b { font-size: 24px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
