@@ -14,6 +14,8 @@ export const loans = reactive<Loan[]>([]);
 export const checkGroups = reactive<CheckGroup[]>([]);
 /** Sabit gider kalemleri — Firestore ile senkron. */
 export const fixedGroups = reactive<FixedGroup[]>([]);
+/** EUR/TL kuru — Firestore settings/finance'ten okunur. */
+export const fx = reactive({ eurTry: 54, updatedAt: "" });
 
 function bind<T>(name: string, target: T[]) {
   onSnapshot(collection(firestore, name), (snap) => {
@@ -28,6 +30,19 @@ export function startFinanceListeners() {
   bind("loans", loans);
   bind("checkGroups", checkGroups);
   bind("fixedGroups", fixedGroups);
+  onSnapshot(doc(firestore, "settings", "finance"), (snap) => {
+    const d = snap.data();
+    if (d?.eurTry) {
+      fx.eurTry = d.eurTry;
+      fx.updatedAt = d.updatedAt ?? "";
+    }
+  });
+}
+
+export async function saveEurTry(v: number, date = new Date().toISOString()) {
+  fx.eurTry = v;
+  fx.updatedAt = date;
+  await setDoc(doc(firestore, "settings", "finance"), { eurTry: v, updatedAt: date }, { merge: true });
 }
 
 export async function saveLoan(l: Loan) {

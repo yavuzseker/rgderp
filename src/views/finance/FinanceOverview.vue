@@ -4,12 +4,19 @@
     <div class="kasa">
       <div class="kasa-head">
         <span><i class="pi pi-wallet" /> Kasa <small>(bugün)</small></span>
-        <Button icon="pi pi-pencil" text rounded @click="openCash" v-tooltip.top="'Düzenle'" />
+        <div class="kasa-actions">
+          <div class="fx" v-tooltip.bottom="fxTip">
+            <span class="fx-lbl">EUR/TL</span>
+            <b class="fx-val">{{ fx.eurTry.toFixed(2) }}</b>
+            <Button icon="pi pi-refresh" text rounded size="small" :loading="fxLoading" @click="updateRate" v-tooltip.top="'TCMB\'den güncelle'" />
+          </div>
+          <Button icon="pi pi-pencil" text rounded @click="openCash" v-tooltip.top="'Düzenle'" />
+        </div>
       </div>
       <div class="kasa-figs">
         <div class="kfig"><span>TL</span><b>{{ fmtMoney(cash.tl, "TL") }}</b></div>
         <div class="kfig"><span>EUR</span><b>{{ fmtMoney(cash.eur, "EUR") }}</b></div>
-        <div class="kfig eq"><span>Toplam (EUR karşılığı)</span><b>{{ fmtMoney(cash.eur + cash.tl / eurTry, "EUR") }}</b></div>
+        <div class="kfig eq"><span>Toplam (EUR karşılığı)</span><b>{{ fmtMoney(cash.eur + cash.tl / fx.eurTry, "EUR") }}</b></div>
       </div>
     </div>
 
@@ -92,6 +99,7 @@
       <div class="cash-form">
         <div class="field"><label>TL Bakiye</label><InputNumber v-model="cashForm.tl" :min="0" fluid /></div>
         <div class="field"><label>EUR Bakiye</label><InputNumber v-model="cashForm.eur" :min="0" fluid /></div>
+        <div class="field"><label>EUR/TL Kuru</label><InputNumber v-model="cashForm.rate" :min="0" :minFractionDigits="2" :maxFractionDigits="4" fluid /></div>
       </div>
       <template #footer>
         <Button label="İptal" text @click="cashDialog = false" />
@@ -106,9 +114,12 @@ import { computed, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
-import { eurTry, cash } from "@/data/financeMock";
+import { useToast } from "primevue/usetoast";
+import { cash } from "@/data/financeMock";
+import { fx, saveEurTry } from "@/data/financeStore";
 import { db } from "@/data/store";
 import { fmtMoney, weeksLeft } from "@/finance/types";
+import { fetchTcmbEurSelling } from "@/finance/tcmb";
 import {
   totalContract,
   totalCollected,
@@ -119,16 +130,36 @@ import {
   termAmount,
 } from "@/finance/calc";
 
+const toast = useToast();
+
+// ---- Kur ----
+const fxLoading = ref(false);
+const fxTip = computed(() => (fx.updatedAt ? "Son güncelleme: " + new Date(fx.updatedAt).toLocaleString("tr-TR") : "Kur elle girildi"));
+async function updateRate() {
+  fxLoading.value = true;
+  try {
+    const { rate } = await fetchTcmbEurSelling();
+    await saveEurTry(rate);
+    toast.add({ severity: "success", summary: "Kur güncellendi", detail: `EUR/TL ${rate.toFixed(2)}`, life: 2500 });
+  } catch (e: any) {
+    toast.add({ severity: "error", summary: "Kur alınamadı", detail: e?.message ?? "Hata", life: 4000 });
+  } finally {
+    fxLoading.value = false;
+  }
+}
+
 const cashDialog = ref(false);
-const cashForm = reactive({ tl: 0, eur: 0 });
+const cashForm = reactive({ tl: 0, eur: 0, rate: 0 });
 function openCash() {
   cashForm.tl = cash.tl;
   cashForm.eur = cash.eur;
+  cashForm.rate = fx.eurTry;
   cashDialog.value = true;
 }
 function saveCash() {
   cash.tl = cashForm.tl;
   cash.eur = cashForm.eur;
+  if (cashForm.rate > 0 && cashForm.rate !== fx.eurTry) saveEurTry(cashForm.rate);
   cashDialog.value = false;
 }
 
@@ -185,6 +216,10 @@ const upcoming = computed(() =>
 .kasa-head span { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .kasa-head small { color: #8fc4e8; font-weight: 500; }
 .kasa-head :deep(.p-button) { color: #cfe8f8; }
+.kasa-actions { display: flex; align-items: center; gap: 6px; }
+.fx { display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 3px 6px 3px 10px; }
+.fx-lbl { font-size: 11px; color: #a1d2f0; }
+.fx-val { font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
 .kasa-figs { display: flex; gap: 40px; margin-top: 12px; flex-wrap: wrap; }
 .kfig span { display: block; font-size: 12px; color: #a1d2f0; margin-bottom: 3px; }
 .kfig b { font-size: 24px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }

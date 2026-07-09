@@ -7,8 +7,7 @@ import type { CashBalance, OtherIncome } from "@/finance/types";
 // Bugün kasada olan bakiye (TL + EUR ayrı) — düzenlenebilir.
 export const cash = reactive<CashBalance>({ tl: 18500000, eur: 214000 });
 
-// EUR/TL varsayılan kur (haftalık TCMB — dummy)
-export const eurTry = 47.5;
+// NOT: EUR/TL kuru (fx) Firestore'da — src/data/financeStore.ts
 
 export const finUid = () => `f${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
 

@@ -4,13 +4,13 @@
 // (expenses) vardır. Krediler/çekler/sabit giderler financeStore/mock'ta.
 // Ekranlar bu fonksiyonları computed() içinde çağırır → computed = cache.
 import { db } from "@/data/store";
-import { cash, eurTry, otherIncome } from "@/data/financeMock";
-import { loans, checkGroups, fixedGroups } from "@/data/financeStore";
+import { cash, otherIncome } from "@/data/financeMock";
+import { loans, checkGroups, fixedGroups, fx } from "@/data/financeStore";
 import { fmtMoney } from "./types";
 import type { Order } from "@/types";
 
 // ---- Kur ----
-export const toEur = (n: number, c: "EUR" | "TL") => (c === "EUR" ? n : n / eurTry);
+export const toEur = (n: number, c: "EUR" | "TL") => (c === "EUR" ? n : n / fx.eurTry);
 /** Bir EUR tutarını yuvarlayıp biçimlendirir (özet şeritleri için). */
 export const moneyEur = (n: number) => fmtMoney(Math.round(n), "EUR");
 const cur = (o: Order): "EUR" | "TL" => o.currency ?? "EUR";
@@ -122,7 +122,7 @@ export function monthlyCashflow(months = 12): CashRow[] {
     }
   }
 
-  let run = cash.eur + cash.tl / eurTry;
+  let run = cash.eur + cash.tl / fx.eurTry;
   return buckets.map((b) => {
     const net = b.income - b.expense;
     run += net;
