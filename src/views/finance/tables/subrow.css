@@ -1,0 +1,20 @@
+/* Genişletilebilir satır (expansion) — Krediler/Çekler/Sabit/Proje ekranlarında ortak. */
+.inst { padding: 6px 8px 10px; }
+.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.inst-head i { color: #1488c8; }
+.inst-head small { color: #94a3b8; font-weight: 500; }
+.inst-add { display: flex; align-items: center; gap: 8px; }
+.inst-add :deep(.p-inputnumber-input), .inst-add :deep(.p-datepicker-input) { width: 130px; }
+
+.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
+.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
+.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
+.inst-table tbody tr:last-child td { border-bottom: none; }
+.inst-table .r { text-align: right; }
+.inst-table .mono { font-variant-numeric: tabular-nums; }
+.inst-table tfoot td { padding: 8px 12px; border-top: 2px solid #eef2f7; color: #0f172a; }
+
+.wl { color: #94a3b8; font-weight: 600; }
+.wl.over { color: #ef4444; }
+.empty { text-align: center; color: #94a3b8; padding: 14px; }

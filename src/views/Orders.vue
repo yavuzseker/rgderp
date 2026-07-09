@@ -157,7 +157,7 @@ import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import { db, createOrder, updateOrder, deleteOrder } from "@/data/store";
 import { orderStatus, fmtDate } from "@/utils";
 import { fmtMoney, MILESTONE_CATALOG } from "@/finance/types";
-import { toEur, orderCollected } from "@/finance/calc";
+import { toEur, orderCollected, moneyEur } from "@/finance/calc";
 import type { Order, PaymentTerm } from "@/types";
 
 const CURR = [
@@ -181,16 +181,15 @@ const visibleOrders = computed(() =>
   hideSmall.value ? db.orders.filter((o) => (o.contractValue ?? 0) >= SMALL) : db.orders
 );
 
-const money = (n: number) => fmtMoney(Math.round(n), "EUR");
 const sums = computed<StatItem[]>(() => {
   const list = visibleOrders.value;
   const bedel = list.reduce((s, o) => s + toEur(o.contractValue ?? 0, o.currency ?? "EUR"), 0);
   const tahsil = list.reduce((s, o) => s + toEur(orderCollected(o), o.currency ?? "EUR"), 0);
   return [
     { label: "Sipariş", value: list.length, icon: "pi-clipboard", tone: "blue" },
-    { label: "Toplam Bedel (≈€)", value: money(bedel), icon: "pi-file-edit", tone: "blue" },
-    { label: "Tahsil (≈€)", value: money(tahsil), icon: "pi-check-circle", tone: "green" },
-    { label: "Bekleyen (≈€)", value: money(bedel - tahsil), icon: "pi-clock", tone: "amber" },
+    { label: "Toplam Bedel (≈€)", value: moneyEur(bedel), icon: "pi-file-edit", tone: "blue" },
+    { label: "Tahsil (≈€)", value: moneyEur(tahsil), icon: "pi-check-circle", tone: "green" },
+    { label: "Bekleyen (≈€)", value: moneyEur(bedel - tahsil), icon: "pi-clock", tone: "amber" },
   ];
 });
 const dialog = ref(false);

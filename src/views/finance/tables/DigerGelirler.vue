@@ -59,7 +59,7 @@ import { useToast } from "primevue/usetoast";
 import { otherIncome, finUid } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
 import { fmtMoney, type OtherIncome } from "@/finance/types";
-import { toEur } from "@/finance/calc";
+import { toEur, moneyEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
 import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
@@ -69,7 +69,7 @@ const sums = computed<StatItem[]>(() => {
   const total = otherIncome.reduce((s, g) => s + toEur(g.amount, g.currency), 0);
   return [
     { label: "Kayıt", value: otherIncome.length, icon: "pi-plus-circle", tone: "blue" },
-    { label: "Toplam (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-wallet", tone: "green" },
+    { label: "Toplam (≈€)", value: moneyEur(total), icon: "pi-wallet", tone: "green" },
   ];
 });
 const dialog = ref(false);

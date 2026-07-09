@@ -104,7 +104,7 @@ import DatePicker from "primevue/datepicker";
 import { useToast } from "primevue/usetoast";
 import { fixedGroups, saveFixedGroup, deleteFixedGroup } from "@/data/financeStore";
 import { fmtMoney, type FixedGroup, type FixedEntry } from "@/finance/types";
-import { toEur } from "@/finance/calc";
+import { toEur, moneyEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
 import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
@@ -123,8 +123,8 @@ const sums = computed<StatItem[]>(() => {
   const total = fixedGroups.reduce((s, g) => s + g.entries.reduce((x, e) => x + toEur(e.amount, g.currency), 0), 0);
   return [
     { label: "Kalem", value: fixedGroups.length, icon: "pi-list", tone: "blue" },
-    { label: "Bu Ay (≈€)", value: fmtMoney(Math.round(monthly), "EUR"), icon: "pi-calendar", tone: "amber" },
-    { label: "Girili Toplam (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-wallet", tone: "red" },
+    { label: "Bu Ay (≈€)", value: moneyEur(monthly), icon: "pi-calendar", tone: "amber" },
+    { label: "Girili Toplam (≈€)", value: moneyEur(total), icon: "pi-wallet", tone: "red" },
   ];
 });
 const expandedRows = ref<FixedGroup[]>([]);
@@ -229,23 +229,7 @@ function removeGroup(g: FixedGroup) {
 
 <style scoped>
 @import "@/views/finance/tables/ftable.css";
+@import "@/views/finance/tables/subrow.css";
 .sub { color: #94a3b8; }
 .hint { font-size: 12px; color: #94a3b8; margin: 2px 0 0; }
-
-.inst { padding: 6px 8px 10px; }
-.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-.inst-head i { color: #1488c8; }
-.inst-head small { color: #94a3b8; font-weight: 500; }
-.inst-add { display: flex; align-items: center; gap: 8px; }
-.inst-add :deep(.p-inputnumber-input), .inst-add :deep(.p-datepicker-input) { width: 130px; }
-
-.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
-.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
-.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
-.inst-table tbody tr:last-child td { border-bottom: none; }
-.inst-table .r { text-align: right; }
-.inst-table .mono { font-variant-numeric: tabular-nums; }
-.inst-table tfoot td { padding: 8px 12px; border-top: 2px solid #eef2f7; color: #0f172a; }
-.empty { text-align: center; color: #94a3b8; padding: 14px; }
 </style>

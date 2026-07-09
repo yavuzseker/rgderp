@@ -113,7 +113,7 @@ import { useToast } from "primevue/usetoast";
 import { loans, saveLoan, deleteLoan } from "@/data/financeStore";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, type Loan, type LoanInstallment } from "@/finance/types";
-import { toEur } from "@/finance/calc";
+import { toEur, moneyEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
 import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
@@ -125,8 +125,8 @@ const sums = computed<StatItem[]>(() => {
   const inst = loans.reduce((s, l) => s + toEur(l.monthlyInstallment, l.currency), 0);
   return [
     { label: "Kredi", value: loans.length, icon: "pi-percentage", tone: "blue" },
-    { label: "Toplam Kalan (≈€)", value: fmtMoney(Math.round(rem), "EUR"), icon: "pi-wallet", tone: "red" },
-    { label: "Aylık Taksit (≈€)", value: fmtMoney(Math.round(inst), "EUR"), icon: "pi-calendar", tone: "amber" },
+    { label: "Toplam Kalan (≈€)", value: moneyEur(rem), icon: "pi-wallet", tone: "red" },
+    { label: "Aylık Taksit (≈€)", value: moneyEur(inst), icon: "pi-calendar", tone: "amber" },
   ];
 });
 
@@ -214,25 +214,7 @@ function save() {
 
 <style scoped>
 @import "@/views/finance/tables/ftable.css";
+@import "@/views/finance/tables/subrow.css";
 .sub { color: #94a3b8; }
 .hint { font-size: 12px; color: #94a3b8; margin: 2px 0 0; }
-
-.inst { padding: 6px 8px 10px; }
-.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-.inst-head i { color: #1488c8; }
-.inst-head small { color: #94a3b8; font-weight: 500; }
-.inst-add { display: flex; align-items: center; gap: 8px; }
-.inst-add :deep(.p-inputnumber-input), .inst-add :deep(.p-datepicker-input) { width: 130px; }
-
-.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
-.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
-.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
-.inst-table tbody tr:last-child td { border-bottom: none; }
-.inst-table .r { text-align: right; }
-.inst-table .mono { font-variant-numeric: tabular-nums; }
-.inst-table tfoot td { padding: 8px 12px; border-top: 2px solid #eef2f7; color: #0f172a; }
-.wl { color: #94a3b8; font-weight: 600; }
-.wl.over { color: #ef4444; }
-.empty { text-align: center; color: #94a3b8; padding: 14px; }
 </style>

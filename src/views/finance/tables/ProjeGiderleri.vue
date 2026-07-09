@@ -82,7 +82,7 @@ import { useToast } from "primevue/usetoast";
 import { db, patchProject } from "@/data/store";
 import { fmtDate } from "@/utils";
 import { fmtMoney } from "@/finance/types";
-import { toEur } from "@/finance/calc";
+import { toEur, moneyEur } from "@/finance/calc";
 import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import type { Project, OrderExpense } from "@/types";
 
@@ -97,7 +97,7 @@ const sums = computed<StatItem[]>(() => {
   );
   return [
     { label: "Proje", value: db.projects.length, icon: "pi-sitemap", tone: "blue" },
-    { label: "Toplam Gider (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-arrow-up-right", tone: "red" },
+    { label: "Toplam Gider (≈€)", value: moneyEur(total), icon: "pi-arrow-up-right", tone: "red" },
   ];
 });
 const totalExp = (p: Project) => (p.expenses ?? []).reduce((s, e) => s + e.amount, 0);
@@ -155,19 +155,5 @@ function del(p: Project, e: OrderExpense) {
 
 <style scoped>
 @import "@/views/finance/tables/ftable.css";
-
-.inst { padding: 6px 8px 10px; }
-.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-.inst-head i { color: #1488c8; }
-.inst-head small { color: #94a3b8; font-weight: 500; }
-
-.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
-.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
-.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
-.inst-table tbody tr:last-child td { border-bottom: none; }
-.inst-table .r { text-align: right; }
-.inst-table .mono { font-variant-numeric: tabular-nums; }
-.inst-table tfoot td { padding: 8px 12px; border-top: 2px solid #eef2f7; color: #0f172a; }
-.empty { text-align: center; color: #94a3b8; padding: 14px; }
+@import "@/views/finance/tables/subrow.css";
 </style>

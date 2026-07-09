@@ -103,7 +103,7 @@ import { useToast } from "primevue/usetoast";
 import { db, patchOrder } from "@/data/store";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, MILESTONE_CATALOG, MILESTONE_STATUS } from "@/finance/types";
-import { toEur, orderCollected } from "@/finance/calc";
+import { toEur, orderCollected, moneyEur } from "@/finance/calc";
 import { STATUS_OPTIONS } from "@/finance/ui";
 import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import type { Order, PaymentTerm } from "@/types";
@@ -118,15 +118,14 @@ const visibleOrders = computed(() =>
   hideSmall.value ? db.orders.filter((o) => (o.contractValue ?? 0) >= SMALL) : db.orders
 );
 
-const money = (n: number) => fmtMoney(Math.round(n), "EUR");
 const sums = computed<StatItem[]>(() => {
   const list = visibleOrders.value;
   const bedel = list.reduce((s, o) => s + toEur(o.contractValue ?? 0, o.currency ?? "EUR"), 0);
   const tahsil = list.reduce((s, o) => s + toEur(orderCollected(o), o.currency ?? "EUR"), 0);
   return [
-    { label: "Toplam Bedel (≈€)", value: money(bedel), icon: "pi-file-edit", tone: "blue" },
-    { label: "Tahsil (≈€)", value: money(tahsil), icon: "pi-check-circle", tone: "green" },
-    { label: "Bekleyen (≈€)", value: money(bedel - tahsil), icon: "pi-clock", tone: "amber" },
+    { label: "Toplam Bedel (≈€)", value: moneyEur(bedel), icon: "pi-file-edit", tone: "blue" },
+    { label: "Tahsil (≈€)", value: moneyEur(tahsil), icon: "pi-check-circle", tone: "green" },
+    { label: "Bekleyen (≈€)", value: moneyEur(bedel - tahsil), icon: "pi-clock", tone: "amber" },
   ];
 });
 
@@ -195,31 +194,16 @@ function del(o: Order, t: PaymentTerm) {
 
 <style scoped>
 @import "@/views/finance/tables/ftable.css";
+@import "@/views/finance/tables/subrow.css";
 .muted { color: #cbd5e1; }
 .sub { color: #94a3b8; }
 .filterbar { display: flex; align-items: center; gap: 8px; }
 .filterbar label { font-size: 13px; color: #64748b; cursor: pointer; user-select: none; }
 .ok { color: #10b981; }
-.wl { color: #94a3b8; font-weight: 600; }
-.wl.over { color: #ef4444; }
-
-.inst { padding: 6px 8px 10px; }
-.inst-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.inst-head span { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-.inst-head i { color: #1488c8; }
-.inst-head small { color: #94a3b8; font-weight: 500; }
 .inst-r { display: flex; align-items: center; gap: 10px; }
 .tot { font-size: 12px; font-weight: 700; color: #10b981; background: #e7f7ef; padding: 2px 8px; border-radius: 20px; }
 .tot.bad { color: #b45309; background: #fef3e2; }
-
-.inst-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; }
-.inst-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; padding: 6px 12px; border-bottom: 1px solid #eef2f7; }
-.inst-table td { padding: 8px 12px; border-bottom: 1px solid #f4f7fa; color: #334155; }
-.inst-table tbody tr:last-child td { border-bottom: none; }
-.inst-table .r { text-align: right; }
-.inst-table .mono { font-variant-numeric: tabular-nums; }
 .code { font-size: 11px; font-weight: 800; color: #1488c8; background: #e8f4fb; padding: 3px 7px; border-radius: 6px; }
-.empty { text-align: center; color: #94a3b8; padding: 14px; }
 .contract-info { font-size: 13px; color: #475569; background: #f6fbfe; border: 1px solid #dbeefb; border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; }
 .contract-info i { color: #1488c8; }
 .contract-info b { color: #0f172a; }

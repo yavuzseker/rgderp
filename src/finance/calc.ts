@@ -6,10 +6,13 @@
 import { db } from "@/data/store";
 import { cash, eurTry, otherIncome } from "@/data/financeMock";
 import { loans, checkGroups, fixedGroups } from "@/data/financeStore";
+import { fmtMoney } from "./types";
 import type { Order } from "@/types";
 
 // ---- Kur ----
 export const toEur = (n: number, c: "EUR" | "TL") => (c === "EUR" ? n : n / eurTry);
+/** Bir EUR tutarını yuvarlayıp biçimlendirir (özet şeritleri için). */
+export const moneyEur = (n: number) => fmtMoney(Math.round(n), "EUR");
 const cur = (o: Order): "EUR" | "TL" => o.currency ?? "EUR";
 
 // ---- Sipariş (tek kayıt) ----
