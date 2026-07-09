@@ -7,6 +7,7 @@
           <div><h3>Krediler</h3><p>Satıra basınca taksit planı açılır</p></div>
           <Button label="Yeni Kredi" icon="pi pi-plus" @click="openNew" />
         </div>
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Kayıt yok.</div></template>
 
@@ -99,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -112,10 +113,22 @@ import { useToast } from "primevue/usetoast";
 import { loans, saveLoan, deleteLoan } from "@/data/financeStore";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, type Loan, type LoanInstallment } from "@/finance/types";
+import { toEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
 const toast = useToast();
 const expandedRows = ref<Loan[]>([]);
+
+const sums = computed<StatItem[]>(() => {
+  const rem = loans.reduce((s, l) => s + toEur(remainingOf(l), l.currency), 0);
+  const inst = loans.reduce((s, l) => s + toEur(l.monthlyInstallment, l.currency), 0);
+  return [
+    { label: "Kredi", value: loans.length, icon: "pi-percentage", tone: "blue" },
+    { label: "Toplam Kalan (≈€)", value: fmtMoney(Math.round(rem), "EUR"), icon: "pi-wallet", tone: "red" },
+    { label: "Aylık Taksit (≈€)", value: fmtMoney(Math.round(inst), "EUR"), icon: "pi-calendar", tone: "amber" },
+  ];
+});
 
 // ---- Taksit planı yardımcıları ----
 const remainingOf = (l: Loan) =>

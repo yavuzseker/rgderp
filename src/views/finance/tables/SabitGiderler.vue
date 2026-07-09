@@ -7,6 +7,7 @@
           <div><h3>Sabit Giderler</h3><p>Kalem başlığı — satıra basınca aylık tutarlar açılır</p></div>
           <Button label="Yeni Kalem" icon="pi pi-plus" @click="openNew" />
         </div>
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Kayıt yok.</div></template>
 
@@ -91,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -103,9 +104,29 @@ import DatePicker from "primevue/datepicker";
 import { useToast } from "primevue/usetoast";
 import { fixedGroups, saveFixedGroup, deleteFixedGroup } from "@/data/financeStore";
 import { fmtMoney, type FixedGroup, type FixedEntry } from "@/finance/types";
+import { toEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
 const toast = useToast();
+
+const sums = computed<StatItem[]>(() => {
+  const now = new Date();
+  const inMonth = (iso: string) => {
+    const d = new Date(iso);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  };
+  const monthly = fixedGroups.reduce(
+    (s, g) => s + g.entries.filter((e) => inMonth(e.date)).reduce((x, e) => x + toEur(e.amount, g.currency), 0),
+    0
+  );
+  const total = fixedGroups.reduce((s, g) => s + g.entries.reduce((x, e) => x + toEur(e.amount, g.currency), 0), 0);
+  return [
+    { label: "Kalem", value: fixedGroups.length, icon: "pi-list", tone: "blue" },
+    { label: "Bu Ay (≈€)", value: fmtMoney(Math.round(monthly), "EUR"), icon: "pi-calendar", tone: "amber" },
+    { label: "Girili Toplam (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-wallet", tone: "red" },
+  ];
+});
 const expandedRows = ref<FixedGroup[]>([]);
 
 const MONTHS = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];

@@ -7,6 +7,7 @@
           <div><h3>Diğer Gelirler</h3><p>Proje dışı gelirler — KDV iade, ortak ödeme, kasa girişi</p></div>
           <Button label="Yeni Gelir" icon="pi pi-plus" @click="openNew" />
         </div>
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Kayıt yok.</div></template>
 
@@ -45,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -58,9 +59,19 @@ import { useToast } from "primevue/usetoast";
 import { otherIncome, finUid } from "@/data/financeMock";
 import { fmtDate } from "@/utils";
 import { fmtMoney, type OtherIncome } from "@/finance/types";
+import { toEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
 const toast = useToast();
+
+const sums = computed<StatItem[]>(() => {
+  const total = otherIncome.reduce((s, g) => s + toEur(g.amount, g.currency), 0);
+  return [
+    { label: "Kayıt", value: otherIncome.length, icon: "pi-plus-circle", tone: "blue" },
+    { label: "Toplam (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-wallet", tone: "green" },
+  ];
+});
 const dialog = ref(false);
 const submitted = ref(false);
 const date = ref<Date | null>(null);

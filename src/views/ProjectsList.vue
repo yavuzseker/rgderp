@@ -7,6 +7,7 @@
         <PageHeader title="Projeler" subtitle="Sipariş altındaki üretim projeleri ve ilerleme"
           addLabel="Yeni Proje" v-model:search="filters.global.value" searchPlaceholder="Sipariş ara..."
           @add="openNew" />
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Sipariş yok.</div></template>
 
@@ -98,6 +99,7 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import ProgressBar from "primevue/progressbar";
 import PageHeader from "@/components/PageHeader.vue";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import { db, createProject } from "@/data/store";
 import { progressOf } from "@/utils";
 import type { Order } from "@/types";
@@ -106,6 +108,16 @@ const router = useRouter();
 const toast = useToast();
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
 const expandedRows = ref<Order[]>([]);
+
+const sums = computed<StatItem[]>(() => {
+  const projs = db.projects;
+  const avg = projs.length ? Math.round(projs.reduce((s, p) => s + progressOf(p.stages), 0) / projs.length) : 0;
+  return [
+    { label: "Sipariş", value: db.orders.length, icon: "pi-clipboard", tone: "blue" },
+    { label: "Proje", value: projs.length, icon: "pi-sitemap", tone: "slate" },
+    { label: "Ort. İlerleme", value: avg + "%", icon: "pi-chart-line", tone: "green" },
+  ];
+});
 
 const projectsOf = (o: Order) => db.projects.filter((p) => p.orderId === o.id);
 const payPct = (o: Order) => {

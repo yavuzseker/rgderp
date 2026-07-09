@@ -7,6 +7,7 @@
           <div><h3>Ödenecek Çekler</h3><p>Firma bazında — satıra basınca çekler açılır</p></div>
           <Button label="Yeni Firma" icon="pi pi-plus" @click="openNew" />
         </div>
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Kayıt yok.</div></template>
 
@@ -90,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -103,10 +104,22 @@ import { useToast } from "primevue/usetoast";
 import { checkGroups, saveCheckGroup, deleteCheckGroup } from "@/data/financeStore";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, type CheckGroup, type CheckEntry } from "@/finance/types";
+import { toEur } from "@/finance/calc";
 import { CUR } from "@/finance/ui";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 
 const toast = useToast();
 const expandedRows = ref<CheckGroup[]>([]);
+
+const sums = computed<StatItem[]>(() => {
+  const cek = checkGroups.reduce((s, g) => s + g.checks.length, 0);
+  const total = checkGroups.reduce((s, g) => s + g.checks.reduce((x, c) => x + toEur(c.amount, g.currency), 0), 0);
+  return [
+    { label: "Firma", value: checkGroups.length, icon: "pi-building", tone: "blue" },
+    { label: "Çek", value: cek, icon: "pi-money-bill", tone: "slate" },
+    { label: "Toplam (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-wallet", tone: "red" },
+  ];
+});
 
 const totalOf = (g: CheckGroup) => g.checks.reduce((s, c) => s + c.amount, 0);
 const sorted = (g: CheckGroup) => [...g.checks].sort((a, b) => (a.date < b.date ? -1 : 1));
