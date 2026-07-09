@@ -2,7 +2,11 @@
 // Veri katmanını gerçek Firestore'a taşırken src/data/store.ts içindeki
 // fonksiyonların gövdesi buradaki db ile değiştirilecek (imzalar aynı kalacak).
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -15,5 +19,8 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
-export const firestore = getFirestore(app);
+// Kalıcı (IndexedDB) cache — yenilemede diskten okur, offline çalışır, çok-sekme destekli.
+export const firestore = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+});
 export const storage = getStorage(app);
