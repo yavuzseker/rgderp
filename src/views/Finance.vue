@@ -3,9 +3,8 @@
     <div class="fin-head">
       <div>
         <h2>{{ (route.meta.title as string)?.replace('Finans · ', '') || 'Finans' }}</h2>
-        <p>Proje gelir/gider takibi ve nakit akışı — <b>örnek veri</b></p>
+        <p>Proje gelir/gider takibi ve nakit akışı</p>
       </div>
-      <Tag value="DUMMY DATA" severity="warn" />
     </div>
 
     <router-view v-slot="{ Component }">
@@ -16,7 +15,6 @@
 
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import Tag from "primevue/tag";
 
 const route = useRoute();
 </script>
