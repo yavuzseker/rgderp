@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, onMounted, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
@@ -173,6 +173,24 @@ function saveRate() {
   if (rateForm.value > 0) saveEurTry(rateForm.value);
   rateDialog.value = false;
 }
+
+// Günde bir kez: o gün kur girilmemiş ve sorulmamışsa Finans'a girince sor.
+const todayStr = () => new Date().toISOString().slice(0, 10);
+let asked = false;
+function maybeAskRate() {
+  if (asked) return;
+  asked = true;
+  const today = todayStr();
+  if (fx.updatedAt.slice(0, 10) === today) return; // bugün zaten girildi
+  if (localStorage.getItem("fxAskedDate") === today) return; // bugün zaten soruldu
+  localStorage.setItem("fxAskedDate", today);
+  openRate();
+}
+onMounted(() => {
+  // Firestore'dan kur yüklenince karar ver; gelmezse 1.2sn sonra sor.
+  const stop = watch(() => fx.updatedAt, () => { maybeAskRate(); stop(); });
+  setTimeout(maybeAskRate, 1200);
+});
 
 // ---- Kasa (sadece bakiye) ----
 const cashDialog = ref(false);
