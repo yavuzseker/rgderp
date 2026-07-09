@@ -7,9 +7,10 @@
           <div><h3>Proje Gelirleri (Alacaklar)</h3><p>Sipariş bazında — satıra basınca ödeme koşulları açılır</p></div>
           <div class="filterbar">
             <Checkbox v-model="hideSmall" binary inputId="hsGel" />
-            <label for="hsGel">10K altı bakiyeleri gizle</label>
+            <label for="hsGel">50K altı bakiyeleri gizle</label>
           </div>
         </div>
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Sipariş yok.</div></template>
 
@@ -102,18 +103,32 @@ import { useToast } from "primevue/usetoast";
 import { db, patchOrder } from "@/data/store";
 import { fmtDate } from "@/utils";
 import { fmtMoney, weeksLeft, MILESTONE_CATALOG, MILESTONE_STATUS } from "@/finance/types";
+import { toEur, orderCollected } from "@/finance/calc";
 import { STATUS_OPTIONS } from "@/finance/ui";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import type { Order, PaymentTerm } from "@/types";
 
 const toast = useToast();
 const expandedRows = ref<Order[]>([]);
 
-const SMALL = 10000;
+const SMALL = 50000;
 const hideSmall = ref(localStorage.getItem("hideSmallGel") === "1");
 watch(hideSmall, (v) => localStorage.setItem("hideSmallGel", v ? "1" : "0"));
 const visibleOrders = computed(() =>
   hideSmall.value ? db.orders.filter((o) => (o.contractValue ?? 0) >= SMALL) : db.orders
 );
+
+const money = (n: number) => fmtMoney(Math.round(n), "EUR");
+const sums = computed<StatItem[]>(() => {
+  const list = visibleOrders.value;
+  const bedel = list.reduce((s, o) => s + toEur(o.contractValue ?? 0, o.currency ?? "EUR"), 0);
+  const tahsil = list.reduce((s, o) => s + toEur(orderCollected(o), o.currency ?? "EUR"), 0);
+  return [
+    { label: "Toplam Bedel (≈€)", value: money(bedel), icon: "pi-file-edit", tone: "blue" },
+    { label: "Tahsil (≈€)", value: money(tahsil), icon: "pi-check-circle", tone: "green" },
+    { label: "Bekleyen (≈€)", value: money(bedel - tahsil), icon: "pi-clock", tone: "amber" },
+  ];
+});
 
 const amountOf = (o: Order, t: PaymentTerm) => Math.round(((o.contractValue ?? 0) * t.percent) / 100);
 const collected = (o: Order) =>

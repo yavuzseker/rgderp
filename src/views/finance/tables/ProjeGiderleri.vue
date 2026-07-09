@@ -6,6 +6,7 @@
         <div class="fh">
           <div><h3>Proje Giderleri</h3><p>Proje bazında — satıra basınca giderler açılır</p></div>
         </div>
+        <StatStrip :items="sums" />
       </template>
       <template #empty><div class="empty">Proje yok. Önce Projeler'den proje ekleyin.</div></template>
 
@@ -69,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -81,12 +82,24 @@ import { useToast } from "primevue/usetoast";
 import { db, patchProject } from "@/data/store";
 import { fmtDate } from "@/utils";
 import { fmtMoney } from "@/finance/types";
+import { toEur } from "@/finance/calc";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import type { Project, OrderExpense } from "@/types";
 
 const toast = useToast();
 const expandedRows = ref<Project[]>([]);
 
 const curOf = (p: Project): "EUR" | "TL" => db.orders.find((o) => o.id === p.orderId)?.currency ?? "EUR";
+const sums = computed<StatItem[]>(() => {
+  const total = db.projects.reduce(
+    (s, p) => s + (p.expenses ?? []).reduce((x, e) => x + toEur(e.amount, curOf(p)), 0),
+    0
+  );
+  return [
+    { label: "Proje", value: db.projects.length, icon: "pi-sitemap", tone: "blue" },
+    { label: "Toplam Gider (≈€)", value: fmtMoney(Math.round(total), "EUR"), icon: "pi-arrow-up-right", tone: "red" },
+  ];
+});
 const totalExp = (p: Project) => (p.expenses ?? []).reduce((s, e) => s + e.amount, 0);
 const sortedExp = (p: Project) => [...(p.expenses ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1));
 const persist = (p: Project) => patchProject(p.id, { expenses: p.expenses ?? [] });

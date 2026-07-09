@@ -97,6 +97,7 @@ export interface Order {
   stages: OrderStage[];
   // ---- Finans ----
   orderDate?: string; // alınma tarihi (ISO)
+  orderType?: "proje" | "malzeme"; // sipariş türü
   contractValue?: number; // bedel
   currency?: "EUR" | "TL";
   paymentTerms?: PaymentTerm[]; // ödeme koşulları (gelir)

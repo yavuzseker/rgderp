@@ -24,9 +24,10 @@
           searchPlaceholder="Sipariş ara..."
           @add="openNew"
         />
+        <StatStrip :items="sums" />
         <div class="filterbar">
           <Checkbox v-model="hideSmall" binary inputId="hsOrders" />
-          <label for="hsOrders">10K altı bakiyeleri gizle</label>
+          <label for="hsOrders">50K altı bakiyeleri gizle</label>
         </div>
       </template>
       <template #empty><div class="empty">Kayıt bulunamadı.</div></template>
@@ -37,6 +38,12 @@
             <Avatar icon="pi pi-clipboard" shape="circle" style="background: #1488c81a; color: #1488c8" />
             <span class="mono">{{ data.orderNo }}</span>
           </div>
+        </template>
+      </Column>
+      <Column header="Tür" sortable field="orderType" style="width: 110px">
+        <template #body="{ data }">
+          <Tag :value="(data.orderType || 'proje') === 'malzeme' ? 'Malzeme' : 'Proje'"
+            :severity="(data.orderType || 'proje') === 'malzeme' ? 'secondary' : 'info'" />
         </template>
       </Column>
       <Column field="customerName" header="Müşteri" sortable />
@@ -72,6 +79,10 @@
 
     <Dialog v-model:visible="dialog" :header="editId ? 'Siparişi Düzenle' : 'Yeni Sipariş'" modal :style="{ width: '560px' }">
       <div class="form">
+        <div class="field">
+          <label>Sipariş Türü</label>
+          <SelectButton v-model="form.orderType" :options="TYPES" optionLabel="label" optionValue="value" :allowEmpty="false" />
+        </div>
         <div class="two">
           <div class="field">
             <label>Sipariş No *</label>
@@ -140,15 +151,22 @@ import DatePicker from "primevue/datepicker";
 import Avatar from "primevue/avatar";
 import Tag from "primevue/tag";
 import Checkbox from "primevue/checkbox";
+import SelectButton from "primevue/selectbutton";
 import PageHeader from "@/components/PageHeader.vue";
+import StatStrip, { type StatItem } from "@/components/StatStrip.vue";
 import { db, createOrder, updateOrder, deleteOrder } from "@/data/store";
 import { orderStatus, fmtDate } from "@/utils";
 import { fmtMoney, MILESTONE_CATALOG } from "@/finance/types";
+import { toEur, orderCollected } from "@/finance/calc";
 import type { Order, PaymentTerm } from "@/types";
 
 const CURR = [
   { label: "EUR", value: "EUR" as const },
   { label: "TL", value: "TL" as const },
+];
+const TYPES = [
+  { label: "Proje", value: "proje" as const },
+  { label: "Malzeme", value: "malzeme" as const },
 ];
 
 const router = useRouter();
@@ -156,12 +174,25 @@ const toast = useToast();
 const confirm = useConfirm();
 
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
-const SMALL = 10000;
+const SMALL = 50000;
 const hideSmall = ref(localStorage.getItem("hideSmallOrders") === "1");
 watch(hideSmall, (v) => localStorage.setItem("hideSmallOrders", v ? "1" : "0"));
 const visibleOrders = computed(() =>
   hideSmall.value ? db.orders.filter((o) => (o.contractValue ?? 0) >= SMALL) : db.orders
 );
+
+const money = (n: number) => fmtMoney(Math.round(n), "EUR");
+const sums = computed<StatItem[]>(() => {
+  const list = visibleOrders.value;
+  const bedel = list.reduce((s, o) => s + toEur(o.contractValue ?? 0, o.currency ?? "EUR"), 0);
+  const tahsil = list.reduce((s, o) => s + toEur(orderCollected(o), o.currency ?? "EUR"), 0);
+  return [
+    { label: "Sipariş", value: list.length, icon: "pi-clipboard", tone: "blue" },
+    { label: "Toplam Bedel (≈€)", value: money(bedel), icon: "pi-file-edit", tone: "blue" },
+    { label: "Tahsil (≈€)", value: money(tahsil), icon: "pi-check-circle", tone: "green" },
+    { label: "Bekleyen (≈€)", value: money(bedel - tahsil), icon: "pi-clock", tone: "amber" },
+  ];
+});
 const dialog = ref(false);
 const submitted = ref(false);
 const editId = ref<string | null>(null);
@@ -171,12 +202,13 @@ interface Form {
   orderNo: string;
   customerId: string | null;
   orderDate: Date | null;
+  orderType: "proje" | "malzeme";
   contractValue: number | null;
   currency: "EUR" | "TL";
   terms: TermForm[];
 }
 const empty = (): Form => ({
-  orderNo: "", customerId: null, orderDate: null, contractValue: null, currency: "EUR", terms: [],
+  orderNo: "", customerId: null, orderDate: null, orderType: "proje", contractValue: null, currency: "EUR", terms: [],
 });
 const form = reactive<Form>(empty());
 
@@ -201,6 +233,7 @@ function openEdit(o: Order) {
     orderNo: o.orderNo,
     customerId: o.customerId,
     orderDate: o.orderDate ? new Date(o.orderDate) : new Date(o.createdAt),
+    orderType: o.orderType ?? "proje",
     contractValue: o.contractValue ?? null,
     currency: o.currency ?? "EUR",
     terms: (o.paymentTerms ?? []).map((t) => ({ code: t.code, percent: t.percent, dueDate: new Date(t.dueDate), status: t.status })),
@@ -221,6 +254,7 @@ function save() {
     orderNo: form.orderNo,
     customerId: form.customerId,
     orderDate: form.orderDate.toISOString(),
+    orderType: form.orderType,
     contractValue: form.contractValue,
     currency: form.currency,
     paymentTerms,

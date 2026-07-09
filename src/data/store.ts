@@ -135,6 +135,7 @@ export async function createOrder(input: {
   orderNo: string;
   customerId: string;
   orderDate?: string;
+  orderType?: "proje" | "malzeme";
   contractValue?: number;
   currency?: "EUR" | "TL";
   paymentTerms?: PaymentTerm[];
@@ -157,6 +158,7 @@ export async function createOrder(input: {
     dueDate: "",
     stages: [],
     orderDate: input.orderDate ?? new Date().toISOString(),
+    orderType: input.orderType ?? "proje",
     contractValue: input.contractValue ?? 0,
     currency: input.currency ?? "EUR",
     paymentTerms: input.paymentTerms ?? [],
@@ -179,6 +181,7 @@ export async function updateOrder(
     orderNo: string;
     customerId: string;
     orderDate?: string;
+    orderType?: "proje" | "malzeme";
     contractValue?: number;
     currency?: "EUR" | "TL";
     paymentTerms?: PaymentTerm[];
@@ -193,6 +196,7 @@ export async function updateOrder(
     customerId: input.customerId,
     customerName: customer?.name ?? o.customerName,
     orderDate: input.orderDate ?? o.orderDate,
+    orderType: input.orderType ?? o.orderType ?? "proje",
     contractValue: input.contractValue ?? o.contractValue ?? 0,
     currency: input.currency ?? o.currency ?? "EUR",
     paymentTerms: input.paymentTerms ?? o.paymentTerms ?? [],
