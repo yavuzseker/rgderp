@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <DataTable
-      :value="db.orders"
+      :value="visibleOrders"
       dataKey="id"
       paginator
       :rows="10"
@@ -18,12 +18,16 @@
       <template #header>
         <PageHeader
           title="Siparişler"
-          subtitle="Üretim siparişleri ve aşama ilerlemesi"
+          subtitle="Müşteri, bedel ve ödeme koşulları"
           addLabel="Yeni Sipariş"
           v-model:search="filters.global.value"
           searchPlaceholder="Sipariş ara..."
           @add="openNew"
         />
+        <div class="filterbar">
+          <Checkbox v-model="hideSmall" binary inputId="hsOrders" />
+          <label for="hsOrders">10K altı bakiyeleri gizle</label>
+        </div>
       </template>
       <template #empty><div class="empty">Kayıt bulunamadı.</div></template>
 
@@ -121,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -135,6 +139,7 @@ import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Avatar from "primevue/avatar";
 import Tag from "primevue/tag";
+import Checkbox from "primevue/checkbox";
 import PageHeader from "@/components/PageHeader.vue";
 import { db, createOrder, updateOrder, deleteOrder } from "@/data/store";
 import { orderStatus, fmtDate } from "@/utils";
@@ -151,6 +156,12 @@ const toast = useToast();
 const confirm = useConfirm();
 
 const filters = ref({ global: { value: null as string | null, matchMode: "contains" } });
+const SMALL = 10000;
+const hideSmall = ref(localStorage.getItem("hideSmallOrders") === "1");
+watch(hideSmall, (v) => localStorage.setItem("hideSmallOrders", v ? "1" : "0"));
+const visibleOrders = computed(() =>
+  hideSmall.value ? db.orders.filter((o) => (o.contractValue ?? 0) >= SMALL) : db.orders
+);
 const dialog = ref(false);
 const submitted = ref(false);
 const editId = ref<string | null>(null);
@@ -258,6 +269,8 @@ function goDetail(e: { data: Order }) {
 
 .muted { color: #cbd5e1; }
 .terms-badge { font-size: 11.5px; font-weight: 700; color: #1488c8; background: #e8f4fb; padding: 3px 9px; border-radius: 20px; }
+.filterbar { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; }
+.filterbar label { font-size: 13px; color: #64748b; cursor: pointer; user-select: none; }
 
 /* Ödeme koşulları */
 .terms { border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; background: #f8fafc; }

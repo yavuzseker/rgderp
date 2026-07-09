@@ -1,10 +1,14 @@
 <template>
   <div class="fpage">
-    <DataTable :value="db.orders" dataKey="id" v-model:expandedRows="expandedRows"
+    <DataTable :value="visibleOrders" dataKey="id" v-model:expandedRows="expandedRows"
       paginator :rows="10" removableSort class="card-table" sortField="orderNo" :sortOrder="1">
       <template #header>
         <div class="fh">
           <div><h3>Proje Gelirleri (Alacaklar)</h3><p>Sipariş bazında — satıra basınca ödeme koşulları açılır</p></div>
+          <div class="filterbar">
+            <Checkbox v-model="hideSmall" binary inputId="hsGel" />
+            <label for="hsGel">10K altı bakiyeleri gizle</label>
+          </div>
         </div>
       </template>
       <template #empty><div class="empty">Sipariş yok.</div></template>
@@ -84,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -93,6 +97,7 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Tag from "primevue/tag";
+import Checkbox from "primevue/checkbox";
 import { useToast } from "primevue/usetoast";
 import { db, patchOrder } from "@/data/store";
 import { fmtDate } from "@/utils";
@@ -102,6 +107,13 @@ import type { Order, PaymentTerm } from "@/types";
 
 const toast = useToast();
 const expandedRows = ref<Order[]>([]);
+
+const SMALL = 10000;
+const hideSmall = ref(localStorage.getItem("hideSmallGel") === "1");
+watch(hideSmall, (v) => localStorage.setItem("hideSmallGel", v ? "1" : "0"));
+const visibleOrders = computed(() =>
+  hideSmall.value ? db.orders.filter((o) => (o.contractValue ?? 0) >= SMALL) : db.orders
+);
 
 const amountOf = (o: Order, t: PaymentTerm) => Math.round(((o.contractValue ?? 0) * t.percent) / 100);
 const collected = (o: Order) =>
@@ -170,6 +182,8 @@ function del(o: Order, t: PaymentTerm) {
 @import "@/views/finance/tables/ftable.css";
 .muted { color: #cbd5e1; }
 .sub { color: #94a3b8; }
+.filterbar { display: flex; align-items: center; gap: 8px; }
+.filterbar label { font-size: 13px; color: #64748b; cursor: pointer; user-select: none; }
 .ok { color: #10b981; }
 .wl { color: #94a3b8; font-weight: 600; }
 .wl.over { color: #ef4444; }
