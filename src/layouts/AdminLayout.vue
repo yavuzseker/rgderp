@@ -29,7 +29,7 @@
             <button
               class="nav-item nav-group"
               :class="{ active: groupActive(item) }"
-              @click="toggle(item.label)"
+              @click="openGroup(item)"
               v-tooltip.right="collapsed ? item.label : undefined"
             >
               <i :class="['pi', item.icon]" />
@@ -86,16 +86,17 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Avatar from "primevue/avatar";
 
 const route = useRoute();
+const router = useRouter();
 const collapsed = ref(false);
 
 interface SubItem { to: string; label: string; icon: string; exact?: boolean }
 interface NavSection { label: string; items: SubItem[] }
-interface NavItem { to?: string; label: string; icon: string; sections?: NavSection[] }
+interface NavItem { to?: string; label: string; icon: string; sections?: NavSection[]; defaultTo?: string }
 
 const nav: NavItem[] = [
   { to: "/", label: "Genel Bakış", icon: "pi-th-large" },
@@ -104,6 +105,7 @@ const nav: NavItem[] = [
   {
     label: "Finans",
     icon: "pi-wallet",
+    defaultTo: "/finance",
     sections: [
       { label: "Özet", items: [
         { to: "/finance", label: "Genel Bakış", icon: "pi-chart-bar", exact: true },
@@ -131,7 +133,14 @@ const title = computed(() => (route.meta.title as string) ?? "RGD-ERP");
 // Açık gruplar — Finans, ilgili sayfadaysak otomatik açık.
 const openGroups = ref<Record<string, boolean>>({ Finans: route.path.startsWith("/finance") });
 const isOpen = (label: string) => !!openGroups.value[label];
-const toggle = (label: string) => (openGroups.value[label] = !openGroups.value[label]);
+function openGroup(item: NavItem) {
+  const willOpen = !isOpen(item.label);
+  openGroups.value[item.label] = willOpen;
+  // İlk açılışta doğrudan varsayılan sayfaya (Genel Bakış) git.
+  if (willOpen && item.defaultTo && !route.path.startsWith(item.defaultTo)) {
+    router.push(item.defaultTo);
+  }
+}
 
 function isActive(to: string) {
   if (to === "/") return route.path === "/";
