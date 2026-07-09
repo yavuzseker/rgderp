@@ -223,6 +223,8 @@ function onTermCode(t: TermForm) {
 
 function openNew() {
   Object.assign(form, empty());
+  // Varsayılan ödeme koşulu: ATR %100 (gerekirse değiştirilir)
+  form.terms = [{ code: "ATR", percent: 100, dueDate: new Date(), status: "bekliyor" }];
   editId.value = null;
   submitted.value = false;
   dialog.value = true;
